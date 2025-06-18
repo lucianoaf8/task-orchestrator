@@ -5,7 +5,18 @@ import sys
 from datetime import datetime
 from orchestrator.core.config_manager import ConfigManager
 
-app = Flask(__name__, template_folder='../../templates')
+app = Flask(__name__, template_folder="../../templates")
+
+# Register new API blueprint (Phase 4)
+try:
+    from orchestrator.web.api.routes import api_bp
+
+    app.register_blueprint(api_bp)
+except Exception as exc:  # pragma: no cover – ensure dashboard still works even if API fails
+    import logging
+
+    logging.getLogger(__name__).warning("API blueprint failed to register: %s", exc)
+
 config_manager = ConfigManager()
 
 # Existing endpoints...
@@ -29,7 +40,7 @@ def health_check():
             'error': str(e)
         }), 500
 
-@app.route('/api/tasks')
+# @app.route('/api/tasks')
 def get_tasks():
     """Get all tasks with recent execution status"""
     try:
@@ -53,7 +64,7 @@ def get_tasks():
             'status': 'error'
         }), 500
 
-@app.route('/api/tasks/<task_name>/history')
+# @app.route('/api/tasks/<task_name>/history')
 def get_task_history(task_name):
     """Get execution history for a specific task"""
     try:
@@ -72,7 +83,7 @@ def get_task_history(task_name):
 
 # NEW ENDPOINTS FOR TASK MANAGEMENT
 
-@app.route('/api/tasks', methods=['POST'])
+# @app.route('/api/tasks', methods=['POST'])
 def add_or_update_task():
     """Add new task or update existing task"""
     try:
@@ -131,7 +142,7 @@ def add_or_update_task():
             'error': str(e)
         }), 500
 
-@app.route('/api/tasks/<task_name>', methods=['DELETE'])
+# @app.route('/api/tasks/<task_name>', methods=['DELETE'])
 def delete_task(task_name):
     """Delete a task"""
     try:
@@ -167,7 +178,7 @@ def delete_task(task_name):
             'error': str(e)
         }), 500
 
-@app.route('/api/test-command', methods=['POST'])
+# @app.route('/api/test-command', methods=['POST'])
 def test_command():
     """Test a command without adding it as a task"""
     try:
@@ -214,7 +225,7 @@ def test_command():
             'error': str(e)
         }), 500
 
-@app.route('/api/tasks/<task_name>/run', methods=['POST'])
+# @app.route('/api/tasks/<task_name>/run', methods=['POST'])
 def run_task_manually(task_name):
     """Manually trigger a task execution"""
     try:

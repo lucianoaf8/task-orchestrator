@@ -74,7 +74,7 @@ def test_scheduler_execute_task(monkeypatch, scheduler):
         def check_dependencies(self, task_name):  # noqa: D401
             return True, "OK"
 
-    monkeypatch.setitem(sys.modules, "main", SimpleNamespace(TaskManager=DummyTM))
+    monkeypatch.setitem(sys.modules, "orchestrator.legacy.task_manager", SimpleNamespace(TaskManager=DummyTM))
 
     result = scheduler.execute_task("dummy")
     assert isinstance(result, TaskResult)

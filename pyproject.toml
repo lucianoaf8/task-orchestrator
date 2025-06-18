@@ -10,3 +10,30 @@ python_version = "3.11"
 strict_optional = true
 ignore_missing_imports = true
 allow_untyped_defs = true
+
+
+[project]
+name = "task-python-orchestrator"
+version = "0.1.0"
+description = "Python task orchestrator with Windows Scheduler integration and web dashboard"
+readme = "README.md"
+requires-python = ">=3.11"
+authors = [{ name = "Your Name" }]
+license = { text = "MIT" }
+dependencies = [
+    "flask>=2.3",
+    "croniter>=1.3",
+    "cryptography>=41.0"
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4",
+    "black>=23.7",
+    "ruff>=0.4",
+    "mypy>=1.6"
+]
+
+[project.scripts]
+orc = "orchestrator.cli:main"
+orc-dashboard = "orchestrator.cli:serve"

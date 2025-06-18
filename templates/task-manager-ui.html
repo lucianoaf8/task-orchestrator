@@ -751,7 +751,7 @@
         // Load existing tasks
         async function loadTasks() {
             try {
-                const response = await fetch('/api/tasks');
+                const response = await fetch('/api/v2/tasks');
                 const data = await response.json();
                 
                 if (data.status === 'success') {
@@ -882,7 +882,7 @@
             if (!confirm(`Run task "${taskName}" now?`)) return;
             
             try {
-                const response = await fetch(`/api/tasks/${taskName}/run`, {
+                const response = await fetch(`/api/v2/tasks/${taskName}/run`, {
                     method: 'POST'
                 });
                 const data = await response.json();
@@ -901,7 +901,7 @@
             if (!confirm(`Delete task "${taskName}"? This cannot be undone.`)) return;
             
             try {
-                const response = await fetch(`/api/tasks/${taskName}`, {
+                const response = await fetch(`/api/v2/tasks/${taskName}`, {
                     method: 'DELETE'
                 });
                 const data = await response.json();
@@ -967,7 +967,7 @@
             };
             
             try {
-                const response = await fetch('/api/tasks', {
+                const response = await fetch('/api/v2/tasks', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'

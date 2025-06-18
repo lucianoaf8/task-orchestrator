@@ -841,7 +841,7 @@
             showRefreshIndicator();
             
             try {
-                const response = await fetch('/api/tasks');
+                const response = await fetch('/api/v2/tasks');
                 const data = await response.json();
                 
                 if (data.status === 'success') {
@@ -1070,7 +1070,7 @@
         // System status
         async function updateSystemStatus() {
             try {
-                const response = await fetch('/health');
+                const response = await fetch('/api/v2/health');
                 const data = await response.json();
                 
                 const statusHTML = `
@@ -1100,7 +1100,7 @@
             if (!confirm(`Run task "${taskName}" now?`)) return;
             
             try {
-                const response = await fetch(`/api/tasks/${taskName}/run`, {
+                const response = await fetch(`/api/v2/tasks/${taskName}/run`, {
                     method: 'POST'
                 });
                 const data = await response.json();
@@ -1119,7 +1119,7 @@
 
         function viewTaskHistory(taskName) {
             // Open task history in new window or modal
-            window.open(`/api/tasks/${taskName}/history`, '_blank');
+            window.open(`/api/v2/tasks/${taskName}/history`, '_blank');
         }
 
         function editTask(taskName) {

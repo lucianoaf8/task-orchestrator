@@ -100,7 +100,57 @@ class WindowsScheduler:  # noqa: R0903 – thin wrapper
             self.logger.warning("Could not parse schtasks JSON output")
             return []
 
-        return [task for task in tasks if task.get("TaskName", "").startswith(self.TASK_PATH + self.TASK_PREFIX)]
+        return [
+            task
+            for task in tasks
+            if task.get("TaskName", "").lstrip("\\").startswith(self.TASK_PATH.lstrip("\\") + self.TASK_PREFIX)
+        ]
+
+    # ------------------------------------------------------------
+    # Extra helpers – useful for Phase-2 success criteria
+    # ------------------------------------------------------------
+    def enable_task(self, task_name: str) -> bool:
+        """Enable an existing scheduled task (no-op if already enabled)."""
+
+        full_name = self.TASK_PREFIX + task_name
+        cmd = [
+            "schtasks",
+            "/Change",
+            "/TN",
+            str(Path(self.TASK_PATH) / full_name),
+            "/ENABLE",
+        ]
+        return self._run(cmd)
+
+    def disable_task(self, task_name: str) -> bool:
+        """Disable an existing scheduled task (no-op if already disabled)."""
+
+        full_name = self.TASK_PREFIX + task_name
+        cmd = [
+            "schtasks",
+            "/Change",
+            "/TN",
+            str(Path(self.TASK_PATH) / full_name),
+            "/DISABLE",
+        ]
+        return self._run(cmd)
+
+    def get_task_status(self, task_name: str) -> Dict[str, str] | None:
+        """Return raw task info from *schtasks* as a dict or **None** if absent."""
+
+        full_name = self.TASK_PREFIX + task_name
+        success, stdout = self._run(
+            QUERY_CMD_BASE + ["/TN", str(Path(self.TASK_PATH) / full_name)],
+            capture_output=True,
+        )
+        if not success or not stdout:
+            return None
+        try:
+            task_list = json.loads(stdout)
+            return task_list[0] if task_list else None
+        except json.JSONDecodeError:
+            self.logger.warning("Could not parse schtasks JSON output for single task")
+            return None
 
     # ------------------------------------------------------------
     # Internal utilities

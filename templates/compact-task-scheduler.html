@@ -865,7 +865,7 @@
         // Load existing tasks
         async function loadTasks() {
             try {
-                const response = await fetch('/api/tasks');
+                const response = await fetch('/api/v2/tasks');
                 const data = await response.json();
                 
                 if (data.status === 'success') {
@@ -1043,7 +1043,7 @@
             };
             
             try {
-                const response = await fetch('/api/tasks', {
+                const response = await fetch('/api/v2/tasks', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'

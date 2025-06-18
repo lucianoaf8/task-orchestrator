@@ -332,17 +332,27 @@ Error:
                 self.logger.error(f"Scheduler error: {e}")
                 time.sleep(60)  # Wait a minute on error
 
-def main():
-    """Main entry point for the orchestrator"""
+# ---------------------------------------------------------------------------
+# Phase-3 refactor: expose *legacy* daemon and switch to new CLI entry point
+# ---------------------------------------------------------------------------
+
+def legacy_daemon() -> None:  # noqa: D401
+    """Run the original polling scheduler (back-compat only)."""
+
     import getpass
-    
-    # Get master password for encryption
-    master_password = getpass.getpass("Enter master password (or press Enter for no encryption): ")
-    if not master_password.strip():
-        master_password = None
-    
+
+    master_password = getpass.getpass("Master password (blank if none): ") or None
     manager = TaskManager(master_password=master_password)
     manager.run_scheduler()
+
+
+def main() -> None:  # pragma: no cover – CLI handoff
+    """Delegate to :pymod:`orchestrator.cli` (new unified CLI)."""
+
+    from orchestrator.cli import cli_main  # local import avoids cycles
+
+    cli_main()
+
 
 if __name__ == "__main__":
     main()

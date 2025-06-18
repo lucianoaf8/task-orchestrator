@@ -60,6 +60,10 @@ class TaskScheduler:  # noqa: R0903 – intentionally minimal scaffold
         """Remove task from Windows Task Scheduler."""
         return self.windows_scheduler.delete_task(task_name)
 
+    def task_exists(self, task_name: str) -> bool:
+        """Return True if task is present in Windows Scheduler."""
+        return self.windows_scheduler.task_exists(task_name)
+
     def list_scheduled_tasks(self) -> List[dict]:
         """Return information about scheduled orchestrator tasks."""
         return self.windows_scheduler.list_orchestrator_tasks()
@@ -70,7 +74,7 @@ class TaskScheduler:  # noqa: R0903 – intentionally minimal scaffold
     def execute_task(self, task_name: str) -> TaskResult:  # noqa: D401
         """Execute a task immediately and return its :class:`TaskResult`."""
         # For now reuse legacy TaskManager execution path until Phase 3.
-        from main import TaskManager  # type: ignore  # local import to sidestep circular deps
+        from orchestrator.legacy.task_manager import TaskManager  # type: ignore  # legacy support
 
         manager = TaskManager()
         legacy_result = manager.run_task_with_retry(task_name)
@@ -82,7 +86,7 @@ class TaskScheduler:  # noqa: R0903 – intentionally minimal scaffold
     # Placeholder helpers ------------------------------------------------
     def check_dependencies(self, task_name: str) -> tuple[bool, str]:
         """Stub – dependency checks handled in legacy TaskManager for now."""
-        from main import TaskManager  # type: ignore
+        from orchestrator.legacy.task_manager import TaskManager  # type: ignore
 
         return TaskManager().check_dependencies(task_name)
 

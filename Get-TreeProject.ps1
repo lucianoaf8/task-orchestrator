@@ -1,5 +1,5 @@
 # Get-ProjectTree.ps1
-# PowerShell script to generate a clean project tree structure with proper exclusions
+# PowerShell script to generate a clean project tree structure excluding .gitignore patterns
 
 param(
     [string]$ProjectPath = "C:\Projects\task-python-orchestrator",
@@ -8,30 +8,58 @@ param(
 
 # Define exclusion patterns based on .gitignore
 $ExclusionPatterns = @(
-    # Git and IDE
-    '.git', '.windsurf', '.vscode', '.idea', '.settings',
-    
     # Python
-    '__pycache__', 'build', 'develop-eggs', 'dist', 'downloads', 
-    'eggs', '.eggs', 'lib', 'lib64', 'parts', 'sdist', 'var', 
-    'wheels', 'share', '.Python',
+    '__pycache__', '*.pyc', '*.pyo', '*.pyd', '*.so', '.Python',
+    'build', 'develop-eggs', 'dist', 'downloads', 'eggs', '.eggs',
+    'lib', 'lib64', 'parts', 'sdist', 'var', 'wheels', 'share',
+    '*.egg-info', '.installed.cfg', '*.egg', 'MANIFEST',
+    
+    # PyInstaller
+    '*.manifest', '*.spec',
     
     # Testing
-    'htmlcov', '.tox', '.nox', '.cache', '.hypothesis', 
-    '.pytest_cache', 'cover',
+    'htmlcov', '.tox', '.nox', '.coverage', '.coverage.*', '.cache',
+    'nosetests.xml', 'coverage.xml', '*.cover', '*.py,cover',
+    '.hypothesis', '.pytest_cache', 'cover',
     
     # Virtual Environments
     '.env', '.venv', 'env', 'venv', 'ENV', 'env.bak', 'venv.bak',
     '.conda', 'conda-meta',
     
+    # IDEs and Editors
+    '.vscode', '.idea', '*.swp', '*.swo', '*~', '.project',
+    '.pydevproject', '.settings', '*.sublime-project', '*.sublime-workspace',
+    '.spyderproject', '.spyproject', '.ropeproject',
+    
     # OS Generated
-    '.DS_Store', '.Spotlight-V100', '.Trashes',
+    '.DS_Store', '.DS_Store?', '._*', '.Spotlight-V100', '.Trashes',
+    'ehthumbs.db', 'Thumbs.db', 'desktop.ini', 'Desktop.ini',
     
     # Project-Specific Data
-    'data', 'logs', 'log',
+    'data', '*.db', '*.sqlite', '*.sqlite3', 'orchestrator.db',
+    
+    # Logs
+    'logs', '*.log', '*.log.*', 'log',
+    
+    # Excel/CSV
+    '*.xlsx', '*.xls', '*.csv', '*_data_*.xlsx', 'totango_*.xlsx',
+    'citus_*.xlsx', 'monthly_report_*.xlsx',
+    
+    # Config with sensitive data
+    '.env.local', '.env.*.local', 'config.ini', 'config.yaml',
+    'config.yml', 'secrets.json', 'credentials.json',
+    
+    # Backup files
+    '*.bak', '*.backup', '*.tmp', '*.temp',
     
     # Network/temp
     'downloads', 'temp', 'tmp',
+    
+    # Email configs
+    'email_config.json', 'smtp_config.ini',
+    
+    # Certificates
+    '*.pem', '*.key', '*.crt', '*.cert', '*.p12', '*.pfx',
     
     # Jupyter
     '.ipynb_checkpoints',
@@ -40,169 +68,165 @@ $ExclusionPatterns = @(
     'instance', '.webassets-cache',
     
     # Documentation builds
-    '_build', 'site',
+    'docs/_build', '/site',
     
     # Type checkers
-    '.mypy_cache', '.pyre', '.pytype', 'cython_debug',
+    '.mypy_cache', '.dmypy.json', 'dmypy.json', '.pyre', '.pytype',
+    'cython_debug',
     
     # Node.js
-    'node_modules',
+    'node_modules', 'npm-debug.log*', 'yarn-debug.log*', 'yarn-error.log*',
+    
+    # Package locks
+    'Pipfile.lock', 'poetry.lock',
+    
+    # Environment files
+    '.env.production', '.env.development', '.env.test',
+    
+    # PID files
+    '*.pid', 'pids', '*.seed', '*.pid.lock',
+    
+    # Local development
+    'local_config.py', 'local_settings.py', 'dev_config.py',
+    
+    # Task outputs
+    'reports', 'output', 'exports',
+    
+    # macOS specific
+    '.AppleDouble', '.LSOverride', 'Icon', '.DocumentRevisions-V100',
+    '.fseventsd', '.TemporaryItems', '.VolumeIcon.icns',
+    '.com.apple.timemachine.donotpresent',
+    
+    # Linux specific
+    '.fuse_hidden*', '.directory', '.Trash-*', '.nfs*',
+    
+    # Archives
+    '*.zip', '*.tar.gz', '*.rar', '*.7z',
+    
+    # Workspace files
+    '*.code-workspace', '.history',
     
     # Cache directories
-    '.npm', '.eslintcache',
+    '.npm', '.eslintcache', '.rpt2_cache', '.rts2_cache_cjs',
+    '.rts2_cache_es', '.rts2_cache_umd',
+    
+    # REPL history
+    '.node_repl_history',
+    
+    # Output files
+    '*.tgz', '.yarn-integrity',
+    
+    # VSCode test
+    '.vscode-test',
     
     # Custom project patterns
-    'encrypted_credentials', 'task_outputs', 'execution_logs',
-    'database_backups', 'test_data', 'sample_data', 'perf_logs',
-    'task_locks', 'email_queue', 'email_temp',
+    'encrypted_credentials', '*.encrypted', 'task_outputs',
+    'execution_logs', 'vpn_status.cache', 'email_queue', 'email_temp',
+    '*.db.backup', 'database_backups', 'test_data', 'sample_data',
+    'perf_logs', '*.perf', '*.lock', 'task_locks',
+    '*_simulator.py', '*_demo.py', 'demo_*', 'simulation_*',
     
     # Additional custom exclusions
-    '.claude', 'docs', 'linven'
+    '.claude', '*.txt', 'claude.md', 'docs', 'linven', '.git', '.windsurf'
 )
 
-# File extensions to exclude
-$ExcludedExtensions = @(
-    '*.pyc', '*.pyo', '*.pyd', '*.so', '*.egg-info', '*.egg',
-    '*.manifest', '*.spec', '*.coverage', '*.cover', '*.log',
-    '*.db', '*.sqlite', '*.sqlite3', '*.xlsx', '*.xls', '*.csv',
-    '*.bak', '*.backup', '*.tmp', '*.temp', '*.pem', '*.key',
-    '*.crt', '*.cert', '*.p12', '*.pfx', '*.zip', '*.tar.gz',
-    '*.rar', '*.7z', '*.pid', '*.lock', '*.encrypted', '*.perf',
-    'Thumbs.db', 'ehthumbs.db', 'Desktop.ini', 'desktop.ini',
-    '*.txt', '*.md'
-)
-
-# Exception: Keep these specific files even if they match excluded extensions
-$KeepFiles = @(
-    'requirements.txt', 'README.md', '.gitignore', 'pyproject.toml',
-    '.pre-commit-config.yaml'
-)
-
-# Function to check if a directory should be excluded
-function Test-ShouldExcludeDirectory {
-    param([string]$DirectoryName, [string]$FullPath)
+# Function to check if a path should be excluded
+function Test-ShouldExclude {
+    param([string]$Path, [string]$Name)
     
-    # Check against exclusion patterns
     foreach ($pattern in $ExclusionPatterns) {
-        if ($DirectoryName -eq $pattern) {
+        # Handle exact matches
+        if ($Name -eq $pattern) { return $true }
+        
+        # Handle wildcard patterns
+        if ($pattern.Contains('*')) {
+            if ($Name -like $pattern) { return $true }
+        }
+        
+        # Handle directory patterns (check if current path contains the pattern)
+        if ($Path -like "*\$pattern\*" -or $Path -like "*\$pattern" -or $Path -eq $pattern) {
             return $true
         }
-        if ($pattern.Contains('*') -and $DirectoryName -like $pattern) {
+        
+        # Handle patterns that start with specific paths
+        if ($pattern.StartsWith('/') -and $Path -like "*$($pattern.Substring(1))*") {
             return $true
         }
     }
-    
     return $false
 }
 
-# Function to check if a file should be excluded
-function Test-ShouldExcludeFile {
-    param([string]$FileName, [string]$FullPath)
+# Function to get file type indicator
+function Get-FileIcon {
+    param([string]$Extension, [bool]$IsContainer)
     
-    # Check if file is in keep list first
-    if ($KeepFiles -contains $FileName) {
-        return $false
-    }
-    
-    # Check against excluded extensions
-    foreach ($pattern in $ExcludedExtensions) {
-        if ($FileName -like $pattern) {
-            return $true
-        }
-    }
-    
-    return $false
-}
-
-# Function to get file type prefix
-function Get-FileTypePrefix {
-    param([string]$Extension, [bool]$IsDirectory)
-    
-    if ($IsDirectory) {
-        return ""
+    if ($IsContainer) {
+        return "[DIR]"
     }
     
     switch -Regex ($Extension) {
-        '\.py$' { return "[PY]   " }
-        '\.md$' { return "[MD]   " }
-        '\.json$' { return "[JSON] " }
-        '\.ya?ml$' { return "[YAML] " }
-        '\.html$' { return "[HTML] " }
-        '\.js$' { return "[JS]   " }
-        '\.css$' { return "[CSS]  " }
-        '\.ps1$|\.bat$' { return "[SCRIPT]" }
-        '\.toml$' { return "[TOML] " }
-        '\.txt$' { return "[TXT]  " }
-        default { return "[FILE] " }
+        '\.py$' { return "[PY] " }
+        '\.md$' { return "[MD] " }
+        '\.json$' { return "[JSON]" }
+        '\.yml$|\.yaml$' { return "[YAML]" }
+        '\.txt$' { return "[TXT]" }
+        '\.html$' { return "[HTML]" }
+        '\.js$' { return "[JS] " }
+        '\.css$' { return "[CSS]" }
+        '\.bat$|\.ps1$' { return "[SCRIPT]" }
+        '\.toml$' { return "[TOML]" }
+        '\.ini$' { return "[INI]" }
+        '\.cfg$' { return "[CFG]" }
+        '\.sql$' { return "[SQL]" }
+        default { return "[FILE]" }
     }
 }
 
-# Main tree generation function
-function Get-CustomTree {
+# Function to generate tree structure
+function Get-TreeStructure {
     param(
         [string]$Path,
         [string]$Prefix = "",
         [bool]$IsLast = $true,
-        [int]$Depth = 0
+        [int]$Level = 0
     )
     
-    $result = @()
+    $items = @()
     
     try {
         if (-not (Test-Path $Path)) {
-            return $result
+            Write-Warning "Path not found: $Path"
+            return $items
         }
         
-        # Get directories first, then files - but exclude before processing
-        $directories = Get-ChildItem -Path $Path -Directory -Force -ErrorAction SilentlyContinue | 
-                      Where-Object { -not (Test-ShouldExcludeDirectory -DirectoryName $_.Name -FullPath $_.FullName) } |
-                      Sort-Object Name
+        # Get all items in current directory
+        $allItems = Get-ChildItem -Path $Path -Force -ErrorAction SilentlyContinue | 
+                    Where-Object { -not (Test-ShouldExclude -Path $_.FullName -Name $_.Name) } |
+                    Sort-Object @{Expression = {$_.PSIsContainer}; Descending = $true}, Name
         
-        $files = Get-ChildItem -Path $Path -File -Force -ErrorAction SilentlyContinue |
-                 Where-Object { -not (Test-ShouldExcludeFile -FileName $_.Name -FullPath $_.FullName) } |
-                 Sort-Object Name
-        
-        # Combine and process all items
-        $allItems = @()
-        $allItems += $directories
-        $allItems += $files
-        
-        if ($allItems.Count -eq 0) {
-            return $result
-        }
-        
-        for ($i = 0; $i -lt $allItems.Count; $i++) {
-            $item = $allItems[$i]
-            $isLastItem = ($i -eq ($allItems.Count - 1))
-            
-            # Build tree characters using ASCII
-            if ($isLastItem) {
-                $connector = "+-- "
-                $newPrefix = "$Prefix    "
-            } else {
-                $connector = "+-- "
+        if ($allItems) {
+            # Inside Get-TreeStructure
+            for ($i = 0; $i -lt $allItems.Count; $i++) {
+                $item = $allItems[$i]
+                # Always use pipe regardless of last item status
+                $connector = "|-- "
                 $newPrefix = "$Prefix|   "
+                $icon = Get-FileIcon -Extension $item.Extension -IsContainer $item.PSIsContainer
+                $line = "$Prefix$connector$icon $($item.Name)"
+                $items += $line
+                if ($item.PSIsContainer -and $Level -lt 10) {
+                    $subItems = Get-TreeStructure -Path $item.FullName -Prefix $newPrefix -IsLast $false -Level ($Level + 1)
+                    $items += $subItems
+                }
             }
-            
-            # Get file type prefix
-            $typePrefix = Get-FileTypePrefix -Extension $item.Extension -IsDirectory $item.PSIsContainer
-            
-            # Build the line
-            $line = "$Prefix$connector$typePrefix$($item.Name)"
-            $result += $line
-            
-            # Recurse into directories (they've already been filtered)
-            if ($item.PSIsContainer -and $Depth -lt 15) {
-                $subItems = Get-CustomTree -Path $item.FullName -Prefix $newPrefix -IsLast $isLastItem -Depth ($Depth + 1)
-                $result += $subItems
-            }
+
         }
     }
     catch {
         Write-Warning "Error processing $Path : $($_.Exception.Message)"
     }
     
-    return $result
+    return $items
 }
 
 # Main execution
@@ -211,25 +235,22 @@ Write-Host "Project Path: $ProjectPath" -ForegroundColor Cyan
 Write-Host "Output File: $OutputFile" -ForegroundColor Cyan
 Write-Host ""
 
-# Validate project path
+# Check if project path exists
 if (-not (Test-Path $ProjectPath)) {
     Write-Error "Project path does not exist: $ProjectPath"
     exit 1
 }
 
 # Generate the tree structure
-Write-Host "Building tree structure..." -ForegroundColor Yellow
 $projectName = Split-Path $ProjectPath -Leaf
+$treeLines = @()
+$treeLines += "[ROOT] $projectName"
 
-# Get the tree structure starting from project root
-$treeLines = Get-CustomTree -Path $ProjectPath
+# Get the tree structure
+$structure = Get-TreeStructure -Path $ProjectPath
 
-# Prepare the root line
-$rootLine = "$projectName"
-$allLines = @($rootLine) + $treeLines
-
-# Count non-empty items
-$itemCount = $treeLines.Count
+# Combine all lines
+$allLines = $treeLines + $structure
 
 # Create markdown content
 $markdownContent = @"
@@ -241,19 +262,17 @@ $($allLines -join "`n")
 
 ## Summary
 
-- **Total Items Displayed**: $itemCount
+- **Total Items Displayed**: $($structure.Count)
 - **Project Root**: ``$ProjectPath``
 
 "@
 
 # Display to console
-Write-Host ""
 Write-Host "PROJECT STRUCTURE" -ForegroundColor Green
-Write-Host ("=" * 60) -ForegroundColor Gray
+Write-Host ("=" * 50) -ForegroundColor Gray
 $allLines | ForEach-Object { Write-Host $_ }
-Write-Host ("=" * 60) -ForegroundColor Gray
-Write-Host "Total items: $itemCount" -ForegroundColor Yellow
-Write-Host ""
+Write-Host ("=" * 50) -ForegroundColor Gray
+Write-Host "Total items: $($structure.Count)" -ForegroundColor Yellow
 
 # Save to markdown file
 $outputPath = Join-Path $ProjectPath $OutputFile
@@ -263,7 +282,6 @@ try {
 }
 catch {
     Write-Error "Failed to save file: $($_.Exception.Message)"
-    exit 1
 }
 
 # Optional: Open the file
@@ -271,13 +289,10 @@ $openFile = Read-Host "Open the generated file? (y/N)"
 if ($openFile -eq 'y' -or $openFile -eq 'Y') {
     try {
         Invoke-Item $outputPath
-        Write-Host "✓ File opened successfully" -ForegroundColor Green
     }
     catch {
         Write-Warning "Could not open file automatically. File location: $outputPath"
     }
 }
 
-Write-Host ""
-Write-Host "Tree generation complete!" -ForegroundColor Green
-Write-Host "Excluded patterns applied: Git dirs, cache files, data dirs, logs, etc." -ForegroundColor Gray
+Write-Host "`nTree generation complete!" -ForegroundColor Green

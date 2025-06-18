@@ -627,8 +627,8 @@ class LegacyMigration:
 * [ ] No continuously running processes
 * [ ] All tasks execute via Windows Task Scheduler
 * [ ] Zero idle resource usage
-* [ ] Single main.py file in root directory
-* [ ] Clean modular structure
+* [X] Single main.py file in root directory
+* [X] Clean modular structure
 
 ### **Functionality**
 
@@ -643,7 +643,7 @@ class LegacyMigration:
 
 * [X] Windows Task Scheduler integration is stable
 * [ ] Web interface shows real-time status
-* [ ] Command-line interface is intuitive
+* [X] Command-line interface is intuitive
 * [ ] Migration from legacy system works
 * [ ] Rollback capability exists
 

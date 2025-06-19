@@ -8,6 +8,7 @@ parameters will be fleshed out in subsequent sub-phases of *Phase 2*.
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 import logging
 from pathlib import Path
@@ -34,6 +35,10 @@ class WindowsScheduler:  # noqa: R0903 – thin wrapper
 
     def __init__(self) -> None:
         self.logger = logging.getLogger(self.__class__.__name__)
+        # If env var set, run in simulation mode (skip actual schtasks calls)
+        self.simulate = bool(os.environ.get("ORC_SIMULATE_SCHEDULER", ""))
+        if self.simulate:
+            self.logger.info("WindowsScheduler running in simulation mode – no real tasks will be created.")
 
     # ------------------------------------------------------------
     # Public helpers
@@ -49,35 +54,46 @@ class WindowsScheduler:  # noqa: R0903 – thin wrapper
         
         full_name = self.TASK_PREFIX + task_name
         
-        # Get project root directory
+        # Determine project root directory
         import inspect
         import os
         current_file = inspect.getfile(inspect.currentframe())
         project_root = os.path.dirname(os.path.dirname(os.path.dirname(current_file)))
-        
-        # Command always calls orc.py regardless of original task command
-        orc_command = f'python "{os.path.join(project_root, "orc.py")}" --task {task_name}'
-        
+
+        # Ensure executable path (python) is quoted if contains spaces
+        python_exe = os.path.join(project_root, ".venv", "Scripts", "python.exe") if (
+            os.path.exists(os.path.join(project_root, ".venv", "Scripts", "python.exe"))
+        ) else "python"
+
+        # Build command invoking orc.py from the project root via cmd so that the
+        # task runs in the correct working directory without relying on an
+        # unsupported schtasks parameter.
+        orc_command_inner = f'"{python_exe}" "{os.path.join(project_root, "orc.py")}" --task {task_name}'
+        orc_command = f'cmd /c "cd /d {project_root} && {orc_command_inner}"'
+
         cmd = CREATE_CMD_BASE + [
             "/TN",
             str(Path(self.TASK_PATH) / full_name),
             "/TR",
-            orc_command,  # Use orc.py command
-            "/RL",
-            "HIGHEST",
-            "/RU",
-            "SYSTEM",
+            orc_command,
         ]
-        
-        # Add working directory
-        cmd.extend(["/SD", project_root])
-        
-        if description:
-            cmd.extend(["/DE", description])
-        
-        # Append schedule parameters
+
+        # Optionally elevate privileges if explicitly requested via env var
+        if os.environ.get("ORC_SCHEDULER_RUNAS_SYSTEM") and not self.simulate:
+            cmd += ["/RL", "HIGHEST", "/RU", "SYSTEM"]
+
+        # Append schedule parameters from CronConverter result
         for flag, value in schedule_trigger.items():
-            cmd += [f"/{flag.upper()}", str(value)] if value else [f"/{flag.upper()}"]
+            if value is True or value == "":
+                cmd.append(f"/{flag.upper()}")
+            else:
+                cmd += [f"/{flag.upper()}", str(value)]
+
+        # (Optional) log description locally but not pass invalid flag
+        if description:
+            self.logger.info("Task description: %s", description)
+        
+
         
         self.logger.info(f"Creating Windows task with command: {orc_command}")
         return self._run(cmd)
@@ -166,6 +182,11 @@ class WindowsScheduler:  # noqa: R0903 – thin wrapper
     # ------------------------------------------------------------
     def _run(self, cmd: List[str], capture_output: bool = False):  # type: ignore[override]
         """Execute *schtasks.exe* returning success flag and optional stdout."""
+
+        # Short-circuit when in simulation mode
+        if getattr(self, "simulate", False):
+            self.logger.debug("Simulated schtasks run: %s", " ".join(cmd))
+            return (True, "") if capture_output else True
 
         try:
             result = subprocess.run(

@@ -77,11 +77,22 @@ class TaskScheduler:  # noqa: R0903 – intentionally minimal scaffold
         from orchestrator.legacy.task_manager import TaskManager  # type: ignore  # legacy support
 
         manager = TaskManager()
+        # Execute task with full lifecycle
         legacy_result = manager.run_task_with_retry(task_name)
-        # Convert to new TaskResult dataclass if needed
+
+        # Convert to TaskResult consistently
         if isinstance(legacy_result, TaskResult):
-            return legacy_result
-        return TaskResult.from_dict(legacy_result.to_dict())
+            result = legacy_result
+        else:
+            result = TaskResult.from_dict(legacy_result.to_dict())
+
+        # Persist to database for history queries
+        try:
+            self.config_manager.save_task_result(result)
+        except Exception as exc:  # pragma: no cover – do not fail task on DB error
+            self.logger.error("Failed to persist task result: %s", exc)
+
+        return result
 
     # Placeholder helpers ------------------------------------------------
     def check_dependencies(self, task_name: str) -> tuple[bool, str]:

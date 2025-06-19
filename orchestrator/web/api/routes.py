@@ -4,7 +4,7 @@ import os
 from pathlib import Path
 from flask import Blueprint, request, jsonify
 from orchestrator.core.config_manager import ConfigManager
-from croniter import croniter
+from orchestrator.utils.cron_converter import CronConverter
 
 # Create API blueprint and utility helpers
 api_bp = Blueprint("api", __name__, url_prefix="/api")
@@ -23,12 +23,9 @@ def _success(payload: dict, status: int = 200):
 
 
 def _validate_cron(cron_expr: str):
-    """Validate cron expression; return None if valid else error str."""
-    try:
-        croniter(cron_expr)
-        return None
-    except Exception as exc:
-        return str(exc)
+    """Validate schedule string; return None if valid else error message."""
+    ok, msg = CronConverter.validate_cron_expression(cron_expr)
+    return None if ok else msg
 
 
 # Add this helper function at the top of the file

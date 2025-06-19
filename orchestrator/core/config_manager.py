@@ -4,6 +4,7 @@ import json
 import base64
 import platform
 from datetime import datetime
+from pathlib import Path
 from typing import Optional, Dict, Any
 from cryptography.fernet import Fernet
 from cryptography.hazmat.primitives import hashes
@@ -11,9 +12,31 @@ from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 
 class ConfigManager:
     def __init__(self, db_path: str = "data/orchestrator.db", master_password: str = None):
+        """Create a new `ConfigManager`.
+
+        When the orchestrator is executed by Windows Task Scheduler the
+        current working directory defaults to *C:\Windows\System32*.
+        Any *relative* database path would therefore point to the wrong
+        location and a fresh, empty SQLite file would be created there.
+        That in turn makes `orc.py --task <name>` fail because it cannot
+        find the task definition.
+
+        To avoid this class of bugs we resolve relative `db_path` values
+        against the *project root* (the parent of the top-level
+        `orchestrator` package) before opening the connection.
+        """
+        # ----------------------------------------------------------
+        # Resolve *relative* database paths against the repo root
+        # ----------------------------------------------------------
+        if not os.path.isabs(db_path):
+            project_root = Path(__file__).resolve().parents[2]
+            db_path = str(project_root / db_path)
+
         self.db_path = db_path
-        os.makedirs(os.path.dirname(db_path), exist_ok=True)
-        self.db = sqlite3.connect(db_path, check_same_thread=False)
+
+        # Ensure directory exists irrespective of the CWD
+        os.makedirs(os.path.dirname(self.db_path), exist_ok=True)
+        self.db = sqlite3.connect(self.db_path, check_same_thread=False)
         self.cipher = self._init_cipher(master_password) if master_password else None
         self._init_db()
         

@@ -301,7 +301,6 @@ perf_logs/
 task_locks/
 
 # Simulation/demo files that shouldn't be in production
-*_simulator.py
 *_demo.py
 demo_*
 simulation_*

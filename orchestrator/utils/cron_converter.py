@@ -8,6 +8,7 @@ month, day-of-week.  Advanced features such as @reboot or seconds are
 from __future__ import annotations
 
 import logging
+import re
 from datetime import datetime
 from typing import Dict
 
@@ -32,7 +33,32 @@ class CronConverter:  # noqa: D101 – documented in module docstring
         * Minute frequency (*/N) → `/SC MINUTE /MO N`
         """
 
-        fields = cron_expression.strip().split()
+        expr = cron_expression.strip()
+        # -------------------------------
+        # Windows-style schedule parsing
+        # -------------------------------
+        # Pattern 1: Daily HH:MM
+        m_daily = re.fullmatch(r"(\d{1,2}):(\d{2})", expr)
+        if m_daily:
+            h, m = map(int, m_daily.groups())
+            return {"SC": "DAILY", "ST": f"{h:02d}:{m:02d}"}
+
+        # Pattern 2: Weekly DAY HH:MM (e.g. MON 08:00)
+        m_weekly = re.fullmatch(r"(?i)(SUN|MON|TUE|WED|THU|FRI|SAT)\s+(\d{1,2}):(\d{2})", expr)
+        if m_weekly:
+            dow, h, m = m_weekly.groups()
+            return {"SC": "WEEKLY", "D": dow.upper(), "ST": f"{int(h):02d}:{int(m):02d}"}
+
+        # Pattern 3: Monthly N HH:MM (e.g. 15 09:30)
+        m_monthly = re.fullmatch(r"([1-9]|[12]\d|3[01])\s+(\d{1,2}):(\d{2})", expr)
+        if m_monthly:
+            day, h, m = m_monthly.groups()
+            return {"SC": "MONTHLY", "D": day, "ST": f"{int(h):02d}:{int(m):02d}"}
+
+        # -------------------------------------------
+        # Legacy cron syntax (backwards compatibility)
+        # -------------------------------------------
+        fields = expr.split()
         if len(fields) != 5:
             raise ValueError("Cron expression must have 5 fields (minute hour dom month dow)")
 
@@ -91,6 +117,15 @@ class CronConverter:  # noqa: D101 – documented in module docstring
     def validate_cron_expression(cron_expression: str):
         """Return (bool, message) indicating validity of cron string."""
 
+        # Validate new Windows-style formats first
+        if re.fullmatch(r"(\d{1,2}):(\d{2})", cron_expression.strip()):
+            return True, "OK"
+        if re.fullmatch(r"(?i)(SUN|MON|TUE|WED|THU|FRI|SAT)\s+(\d{1,2}):(\d{2})", cron_expression.strip()):
+            return True, "OK"
+        if re.fullmatch(r"([1-9]|[12]\d|3[01])\s+(\d{1,2}):(\d{2})", cron_expression.strip()):
+            return True, "OK"
+
+        # Fallback to cron expression validation for backward compatibility
         try:
             croniter(cron_expression)
             return True, "OK"

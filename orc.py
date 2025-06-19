@@ -126,6 +126,31 @@ def unschedule_task_operation(task_name: str, logger: logging.Logger) -> bool:
         logger.error(f"Error unscheduling task {task_name}: {e}")
         return False
 
+
+def update_task_operation(task_name: str, new_schedule: str | None, new_command: str | None, logger: logging.Logger) -> bool:
+    """Handle --update operation: modify existing task schedule and/or command."""
+    logger.info("Updating task: %s", task_name)
+
+    if not new_schedule and not new_command:
+        logger.error("No --new-schedule or --new-command specified for update")
+        return False
+
+    try:
+        scheduler = TaskScheduler()
+        success = scheduler.update_task(
+            task_name,
+            new_schedule=new_schedule,
+            new_command=new_command,
+        )
+        if success:
+            logger.info("Task %s successfully updated", task_name)
+        else:
+            logger.error("Failed to update task %s", task_name)
+        return success
+    except Exception as exc:
+        logger.error("Error updating task %s: %s", task_name, exc)
+        return False
+
 def main():
     """Main entry point for orc.py"""
     parser = argparse.ArgumentParser(
@@ -149,7 +174,12 @@ Examples:
                       help='List all scheduled tasks')
     group.add_argument('--unschedule', metavar='TASK_NAME',
                       help='Remove task from Windows Task Scheduler')
+    group.add_argument('--update', metavar='TASK_NAME',
+                      help='Update an existing task')
     
+    parser.add_argument('--new-schedule', metavar='CRON', help='New cron schedule (e.g. "*/5 * * * *")')
+    parser.add_argument('--new-command', metavar='CMD', help='New command string for the task')
+
     args = parser.parse_args()
     logger = setup_logging()
     
@@ -162,6 +192,13 @@ Examples:
         success = list_tasks_operation(logger)
     elif args.unschedule:
         success = unschedule_task_operation(args.unschedule, logger)
+    elif args.update:
+        success = update_task_operation(
+            args.update,
+            args.new_schedule,
+            args.new_command,
+            logger,
+        )
     else:
         parser.print_help()
         sys.exit(1)

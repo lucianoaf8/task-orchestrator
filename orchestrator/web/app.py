@@ -4,6 +4,7 @@ import subprocess
 import sys
 from datetime import datetime
 from orchestrator.core.config_manager import ConfigManager
+from orchestrator.utils.cron_converter import CronConverter
 
 app = Flask(__name__, template_folder="../../templates")
 
@@ -109,13 +110,11 @@ def add_or_update_task():
         # Validate cron schedule if provided
         schedule = data.get('schedule', '').strip()
         if schedule:
-            try:
-                from croniter import croniter
-                croniter(schedule)  # This will raise an exception if invalid
-            except Exception as e:
+            ok, msg = CronConverter.validate_cron_expression(schedule)
+            if not ok:
                 return jsonify({
                     'status': 'error',
-                    'error': f'Invalid cron schedule: {str(e)}'
+                    'error': f'Invalid schedule: {msg}'
                 }), 400
         
         # Add/update task in database

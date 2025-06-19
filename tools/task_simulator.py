@@ -1,480 +1,545 @@
 #!/usr/bin/env python3
 """
-Comprehensive Task Simulator for Python Task Orchestrator
-
-This standalone script tests the entire orchestration process:
-1. Creates a test task using ConfigManager (CLI-only)
-2. Schedules it to run within the next minute
-3. Monitors task execution
-4. Validates results
-5. Generates a comprehensive assessment report
+Task Simulator - Automated Task Lifecycle Testing
+Simulates user interaction to create, schedule, monitor, and verify task execution.
 """
 
 import os
 import sys
+import subprocess
 import time
 import json
-import subprocess
-import threading
+import tempfile
 from datetime import datetime, timedelta
-from typing import Dict, List, Optional, Tuple
-from dataclasses import dataclass
+from pathlib import Path
+from typing import Dict, Optional, Tuple
+import sqlite3
+import argparse
 
-# Add the project root to Python path
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+# Constants
+PROJECT_ROOT = Path(__file__).resolve().parent
+TIMEOUT_SECONDS = 300  # 5 minutes
+POLL_INTERVAL = 10  # Check every 10 seconds
+TEST_OUTPUT_DIR = PROJECT_ROOT / "test_outputs"
 
-from orchestrator.core.config_manager import ConfigManager
-
-@dataclass
-class SimulationResult:
-    """Container for simulation results"""
-    timestamp: datetime
-    task_name: str
-    created: bool
-    scheduled_time: str
-    execution_detected: bool
-    execution_successful: bool
-    result_data: Optional[Dict]
-    errors: List[str]
-    warnings: List[str]
-    duration_seconds: float
-    
 class TaskSimulator:
-    """Main task simulator class"""
+    def __init__(
+        self,
+        *,
+        keep_task: bool = False,
+        existing_task: str | None = None,
+        update_schedule: str | None = None,
+        marker: str | None = None,
+    ):
+        """Create a TaskSimulator instance.
+
+        Args:
+            keep_task: Do not remove the task after the simulation.
+            existing_task: If supplied, **skip the creation step** and instead
+                monitor the already-scheduled task of that name. This is handy
+                when validating edits to a pre-existing task definition.
+            update_schedule: For existing task: new cron schedule (e.g. "*/5 * * * *")
+            marker: For existing task: append TEXT marker line to output file each run
+        """
+        self.keep_task = keep_task
+        self.existing_task = existing_task
+        self.update_schedule = update_schedule
+        self.marker = marker
+        self.timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        if self.existing_task:
+            self.task_name = self.existing_task
+            # Output file path unknown – default to test_outputs dir but may not exist
+            self.output_file = TEST_OUTPUT_DIR / f"{self.task_name}_last_output.txt"
+        else:
+            self.task_name = f"simulator_test_{self.timestamp}"
+            self.output_file = TEST_OUTPUT_DIR / f"test_output_{self.timestamp}.txt"
+        self.db_path = PROJECT_ROOT / "data" / "orchestrator.db"
+        self.log_file = PROJECT_ROOT / "logs" / f"orchestrator_{datetime.now().strftime('%Y%m%d')}.log"
+        
+        # Ensure test output directory exists
+        TEST_OUTPUT_DIR.mkdir(exist_ok=True)
+        
+        print(f"[INIT] Task Simulator initialized")
+        print(f"[INIT] Task name: {self.task_name}")
+        print(f"[INIT] Output file: {self.output_file}")
     
-    def __init__(self, db_path: str = "data/orchestrator.db"):
-        self.db_path = db_path
-        self.config_manager = ConfigManager(db_path)
-        self.simulation_start = datetime.now()
-        self.task_name = f"test_task_sim_{int(time.time())}"
-        self.results = SimulationResult(
-            timestamp=self.simulation_start,
-            task_name=self.task_name,
-            created=False,
-            scheduled_time="",
-            execution_detected=False,
-            execution_successful=False,
-            result_data=None,
-            errors=[],
-            warnings=[],
-            duration_seconds=0.0
+    def preflight_checks(self) -> bool:
+        """Verify system is ready for simulation"""
+        print("\n=== PRE-FLIGHT CHECKS ===")
+        
+        # Check database exists
+        if not self.db_path.exists():
+            print(f"[ERROR] Database not found at {self.db_path}")
+            return False
+        print(f"[OK] Database found: {self.db_path}")
+        
+        # Check main.py exists
+        main_py = PROJECT_ROOT / "main.py"
+        if not main_py.exists():
+            print(f"[ERROR] main.py not found")
+            return False
+        print(f"[OK] main.py found")
+        
+        # Check orc.py exists
+        orc_py = PROJECT_ROOT / "orc.py"
+        if not orc_py.exists():
+            print(f"[ERROR] orc.py not found")
+            return False
+        print(f"[OK] orc.py found")
+        
+        # Test database connection
+        try:
+            conn = sqlite3.connect(self.db_path)
+            conn.execute("SELECT COUNT(*) FROM tasks")
+            conn.close()
+            print("[OK] Database connection successful")
+        except Exception as e:
+            print(f"[ERROR] Database connection failed: {e}")
+            return False
+        
+        return True
+    
+    def create_task(self) -> bool:
+        """Create task via main.py CLI"""
+        print("\n=== TASK CREATION ===")
+        
+        # Prepare command that creates output file – use absolute Python path so that
+        # Windows Task Scheduler does not rely on system %PATH%.
+        python_exe = sys.executable.replace("\\", "\\\\")  # escape backslashes for cmd string
+        # Use single quotes inside the Python -c string to avoid clashing with the outer double quotes
+        task_command = (
+            f'"{python_exe}" -c "import datetime, pathlib; '
+            f'p = pathlib.Path(r\'{self.output_file}\'); '
+            f'p.parent.mkdir(parents=True, exist_ok=True); '
+            f'p.write_text(\'SUCCESS at \'+ str(datetime.datetime.now()))"'
         )
         
-    def log(self, message: str, level: str = "INFO"):
-        """Log a message with timestamp"""
-        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        print(f"[{timestamp}] [{level}] {message}")
+        # Prepare input for interactive mode
+        # Menu: 2 (Add task), then task details, then 7 (Exit)
+        user_input = f"""2
+{self.task_name}
+data_job
+{task_command}
+*/1 * * * *
+7
+"""
         
-    def create_test_task(self) -> bool:
-        """Create a test task scheduled to run in the next minute"""
+        print(f"[INFO] Creating task: {self.task_name}")
+        print(f"[INFO] Command: {task_command}")
+        print(f"[INFO] Schedule: Every minute")
+        
         try:
-            # Calculate next minute for execution
-            next_minute = (datetime.now() + timedelta(minutes=1)).replace(second=0, microsecond=0)
-            schedule_str = next_minute.strftime("%H:%M")
-            
-            self.results.scheduled_time = next_minute.strftime("%Y-%m-%d %H:%M:%S")
-            
-            # Get the test script path
-            script_path = os.path.join(os.path.dirname(__file__), "scripts", "test_task.py")
-            if not os.path.exists(script_path):
-                self.results.errors.append(f"Test script not found: {script_path}")
-                return False
-            
-            # Create the task using ConfigManager
-            self.config_manager.add_task(
-                name=self.task_name,
-                task_type="test",
-                command=f"python {script_path}",
-                schedule=schedule_str,
-                timeout=120,  # 2 minutes timeout
-                retry_count=1,
-                retry_delay=30,
-                dependencies=[],
-                enabled=True
-            )
-            
-            # Verify task was created
-            created_task = self.config_manager.get_task(self.task_name)
-            if created_task:
-                self.results.created = True
-                self.log(f"✅ Test task created: {self.task_name}")
-                self.log(f"   Scheduled for: {self.results.scheduled_time}")
-                self.log(f"   Command: {created_task['command']}")
-                self.log(f"   Schedule: {schedule_str}")
-                return True
-            else:
-                self.results.errors.append("Task creation verification failed")
-                return False
-                
-        except Exception as e:
-            self.results.errors.append(f"Task creation failed: {str(e)}")
-            self.log(f"❌ Task creation failed: {e}", "ERROR")
-            return False
-    
-    def check_orchestrator_running(self) -> bool:
-        """Check if the orchestrator is running"""
-        try:
-            # Try to find python processes running main.py or orchestrator
-            result = subprocess.run(
-                ["pgrep", "-f", "python.*main.py|python.*orchestrator"],
-                capture_output=True,
+            # Run main.py in interactive mode with piped input
+            process = subprocess.Popen(
+                [sys.executable, "main.py"],
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
                 text=True,
-                timeout=10
+                cwd=PROJECT_ROOT
             )
             
-            if result.returncode == 0 and result.stdout.strip():
-                self.log("✅ Orchestrator process detected")
-                return True
+            stdout, stderr = process.communicate(input=user_input, timeout=30)
+            
+            # Check for success indicators
+            if "Task 'simulator_test" in stdout and "saved to database" in stdout:
+                print("[OK] Task saved to database")
+                
+                if "scheduled successfully" in stdout:
+                    print("[OK] Task scheduled via orc.py")
+                    return True
+                else:
+                    print("[ERROR] Task saved but scheduling failed")
+                    print(f"[DEBUG] stdout: {stdout}")
+                    return False
             else:
-                self.log("⚠️  Orchestrator process not detected", "WARNING")
-                self.results.warnings.append("Orchestrator process not running")
+                print("[ERROR] Task creation failed")
+                print(f"[DEBUG] stdout: {stdout}")
+                print(f"[DEBUG] stderr: {stderr}")
                 return False
                 
         except subprocess.TimeoutExpired:
-            self.log("⚠️  Process check timed out", "WARNING")
+            print("[ERROR] Task creation timed out")
             return False
-        except FileNotFoundError:
-            # pgrep not available, try alternative method
-            try:
-                result = subprocess.run(
-                    ["ps", "aux"],
-                    capture_output=True,
-                    text=True,
-                    timeout=10
-                )
-                if "main.py" in result.stdout or "orchestrator" in result.stdout:
-                    self.log("✅ Orchestrator process detected (via ps)")
-                    return True
-                else:
-                    self.log("⚠️  Orchestrator process not detected (via ps)", "WARNING")
-                    return False
-            except:
-                self.log("⚠️  Cannot determine orchestrator status", "WARNING")
-                return False
+        except Exception as e:
+            print(f"[ERROR] Task creation failed: {e}")
+            return False
     
-    def monitor_task_execution(self, timeout_minutes: int = 5) -> bool:
-        """Monitor for task execution within the timeout period"""
-        self.log(f"🔍 Monitoring task execution for {timeout_minutes} minutes...")
+    def verify_scheduling(self) -> bool:
+        """Verify task is scheduled in Windows"""
+        print("\n=== SCHEDULING VERIFICATION ===")
         
-        start_monitor = datetime.now()
-        timeout = timedelta(minutes=timeout_minutes)
+        # Check via orc.py --list
+        try:
+            result = subprocess.run(
+                [sys.executable, "orc.py", "--list"],
+                capture_output=True,
+                text=True,
+                cwd=PROJECT_ROOT
+            )
+            
+            if self.task_name in result.stdout:
+                print(f"[OK] Task found in orc.py --list")
+            else:
+                print(f"[ERROR] Task not found in orc.py --list")
+                print(f"[DEBUG] Output: {result.stdout}")
+                return False
+            
+        except Exception as e:
+            print(f"[ERROR] Failed to list tasks: {e}")
+            return False
         
-        initial_history = self.config_manager.get_task_history(self.task_name, 10)
-        initial_count = len(initial_history)
-        
-        while datetime.now() - start_monitor < timeout:
-            try:
-                # Check for new execution records
-                current_history = self.config_manager.get_task_history(self.task_name, 10)
+        # Check Windows Task Scheduler
+        try:
+            result = subprocess.run(
+                ["schtasks", "/query", "/tn", f"\\Orchestrator\\Orc_{self.task_name}", "/fo", "LIST"],
+                capture_output=True,
+                text=True
+            )
+            
+            if result.returncode == 0:
+                print(f"[OK] Task found in Windows Task Scheduler")
                 
-                if len(current_history) > initial_count:
-                    # New execution detected
-                    latest_result = current_history[0]
-                    self.results.execution_detected = True
-                    self.results.result_data = latest_result
+                # Parse next run time
+                for line in result.stdout.split('\n'):
+                    if "Next Run Time:" in line:
+                        next_run = line.split(":", 1)[1].strip()
+                        print(f"[INFO] Next scheduled run: {next_run}")
+                        break
+                
+                return True
+            else:
+                print(f"[ERROR] Task not found in Windows Task Scheduler")
+                return False
+                
+        except Exception as e:
+            print(f"[ERROR] Failed to query Windows tasks: {e}")
+            return False
+    
+    def monitor_execution(self) -> bool:
+        """Monitor task execution until success or timeout"""
+        print("\n=== EXECUTION MONITORING ===")
+        print(f"[INFO] Waiting for task execution (timeout: {TIMEOUT_SECONDS}s)")
+        
+        start_time = time.time()
+        # Record current latest DB result to require a *new* run
+        baseline_db_time = self.get_latest_db_start_time()
+        last_log_position = 0
+        
+        while time.time() - start_time < TIMEOUT_SECONDS:
+            elapsed = int(time.time() - start_time)
+            last_run, next_run, last_result = self.get_windows_task_times()
+            print(f"\n[POLL] Checking execution status ({elapsed}s elapsed)...")
+            print(f"Task: {self.task_name}")
+            print(f"  Last run : {last_run or 'N/A'}")
+            print(f"  Next run : {next_run or 'N/A'}")
+            
+            # Check 1: Output file exists
+            if self.output_file.exists():
+                print(f"[OK] Output file created: {self.output_file}")
+                content = self.output_file.read_text()
+                print(f"[OK] File content: {content}")
+                
+                # Verify content is correct
+                if "SUCCESS at" in content:
+                    print("[OK] Output file contains expected content")
                     
-                    self.log(f"✅ Task execution detected!")
-                    self.log(f"   Status: {latest_result.get('status', 'UNKNOWN')}")
-                    self.log(f"   Start time: {latest_result.get('start_time', 'N/A')}")
-                    self.log(f"   End time: {latest_result.get('end_time', 'N/A')}")
-                    self.log(f"   Exit code: {latest_result.get('exit_code', 'N/A')}")
-                    
-                    # Check if execution was successful
-                    if latest_result.get('status') == 'SUCCESS' and latest_result.get('exit_code') == 0:
-                        self.results.execution_successful = True
-                        self.log("✅ Task executed successfully!")
+                    # Check database for confirmation
+                    if self.check_database_result(after_time=baseline_db_time):
+                        return True
                     else:
-                        self.log(f"❌ Task execution failed: {latest_result.get('status')}", "ERROR")
-                        if latest_result.get('error'):
-                            self.log(f"   Error: {latest_result.get('error')}", "ERROR")
-                    
-                    return True
-                
-                # Wait before next check
-                time.sleep(10)
-                
-            except Exception as e:
-                self.log(f"Error during monitoring: {e}", "ERROR")
-                time.sleep(5)
+                        print("[WARN] File created but database not updated yet")
+            
+            # Check 2: Database task_results
+            if self.check_database_result(after_time=baseline_db_time):
+                print("[OK] Database shows successful execution")
+                return True
+            
+            # Check 3: Monitor logs
+            last_log_position = self.check_logs(last_log_position)
+            
+            # Check 4: Windows task info already fetched above; optionally log last_result
+            if last_result:
+                print(f"  Last result: {last_result}")
+                # Fail fast if the task has already returned a non-zero result twice
+                # Ignore common non-error status codes
+                harmless_codes = {0, 267009, 267010, 267011}  # 0 = success, others = running/disabled/not yet run
+                try:
+                    code_int = int(last_result)
+                except ValueError:
+                    code_int = 1  # treat as generic error
+                if code_int not in harmless_codes and elapsed > 30:
+                    print("[ERROR] Task reported failure via Windows Scheduler (code", code_int, ")")
+                    return False
+            
+            # Wait before next poll
+            time.sleep(POLL_INTERVAL)
         
-        self.log("⏰ Monitoring timeout reached", "WARNING")
-        self.results.warnings.append(f"No execution detected within {timeout_minutes} minutes")
+        print(f"\n[ERROR] Task execution timed out after {TIMEOUT_SECONDS} seconds")
         return False
     
-    def validate_results(self) -> Dict[str, bool]:
-        """Validate the simulation results"""
-        validation = {
-            "task_created": self.results.created,
-            "orchestrator_accessible": len(self.results.errors) == 0,
-            "execution_detected": self.results.execution_detected,
-            "execution_successful": self.results.execution_successful,
-            "database_accessible": True,
-            "configuration_valid": True
-        }
-        
-        # Test database accessibility
+    def check_database_result(self, after_time: Optional[datetime] = None) -> bool:
+        """Check if task execution is recorded in database"""
         try:
-            all_tasks = self.config_manager.get_all_tasks()
-            validation["database_accessible"] = isinstance(all_tasks, dict)
-        except Exception as e:
-            validation["database_accessible"] = False
-            self.results.errors.append(f"Database access failed: {e}")
-        
-        # Test configuration validity
-        try:
-            task = self.config_manager.get_task(self.task_name)
-            validation["configuration_valid"] = task is not None
-        except Exception as e:
-            validation["configuration_valid"] = False
-            self.results.errors.append(f"Configuration validation failed: {e}")
-        
-        return validation
-    
-    def cleanup_test_task(self):
-        """Clean up the test task"""
-        try:
-            # Disable the task instead of deleting for audit trail
-            task = self.config_manager.get_task(self.task_name)
-            if task:
-                self.config_manager.add_task(
-                    name=self.task_name,
-                    task_type=task['type'],
-                    command=task['command'],
-                    schedule=task['schedule'],
-                    timeout=task['timeout'],
-                    retry_count=task['retry_count'],
-                    retry_delay=task['retry_delay'],
-                    dependencies=task['dependencies'],
-                    enabled=False  # Disable the task
-                )
-                self.log("🧹 Test task disabled (preserved for audit)")
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
+            
+            # Query latest result for our task
+            cursor.execute(
+                """
+                SELECT status, start_time, end_time, exit_code, output, error
+                FROM task_results
+                WHERE task_name = ?
+                ORDER BY start_time DESC
+                LIMIT 1
+                """,
+                (self.task_name,),
+            )
+            
+            result = cursor.fetchone()
+            conn.close()
+            
+            if result:
+                status, start_time, end_time, exit_code, output, error = result
+                print(f"[DB] Task result found - Status: {status}")
+                
+                if status == "SUCCESS":
+                    # Ensure this is a *new* run compared with baseline
+                    is_new = True
+                    if after_time and start_time:
+                        try:
+                            run_time = datetime.fromisoformat(start_time)
+                            is_new = run_time > after_time
+                        except Exception:
+                            # If parsing fails, fall back to True to avoid false negatives
+                            is_new = True
+                    print(f"[DB] Start time: {start_time}")
+                    print(f"[DB] End time: {end_time}")
+                    print(f"[DB] Exit code: {exit_code}")
+                    if is_new:
+                        return True
+                    print("[INFO] Success record is not newer than baseline; continuing to wait…")
+                else:
+                    print(f"[DB] Task failed - Error: {error}")
+                    
+            return False
             
         except Exception as e:
-            self.log(f"Warning: Cleanup failed: {e}", "WARNING")
-            self.results.warnings.append(f"Cleanup failed: {e}")
+            print(f"[ERROR] Database query failed: {e}")
+            return False
     
-    def generate_report(self) -> str:
-        """Generate a comprehensive markdown report"""
+    def get_latest_db_start_time(self) -> Optional[datetime]:
+        """Return timestamp of latest task_result row for this task."""
+        try:
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
+            cursor.execute(
+                """
+                SELECT start_time FROM task_results
+                WHERE task_name = ?
+                ORDER BY start_time DESC
+                LIMIT 1
+                """,
+                (self.task_name,),
+            )
+            row = cursor.fetchone()
+            conn.close()
+            if row and row[0]:
+                try:
+                    return datetime.fromisoformat(row[0])
+                except Exception:
+                    return None
+            return None
+        except Exception:
+            return None
+
+    def check_logs(self, last_position: int) -> int:
+        """Check orchestrator logs for task execution"""
+        try:
+            if self.log_file.exists():
+                with open(self.log_file, 'r') as f:
+                    f.seek(last_position)
+                    new_lines = f.read()
+                    
+                    if new_lines and self.task_name in new_lines:
+                        for line in new_lines.split('\n'):
+                            if self.task_name in line:
+                                print(f"[LOG] {line.strip()}")
+                    
+                    return f.tell()
+            
+        except Exception as e:
+            print(f"[WARN] Could not read logs: {e}")
         
-        # Calculate total duration
-        end_time = datetime.now()
-        self.results.duration_seconds = (end_time - self.simulation_start).total_seconds()
-        
-        # Validate results
-        validation = self.validate_results()
-        
-        # Calculate success rate
-        total_checks = len(validation)
-        passed_checks = sum(1 for v in validation.values() if v)
-        success_rate = (passed_checks / total_checks) * 100
-        
-        # Determine overall status
-        overall_status = "✅ PASS" if success_rate >= 80 else "❌ FAIL"
-        
-        report = f"""# Task Orchestrator Simulation Report
-
-## 📊 Executive Summary
-
-**Overall Status:** {overall_status}  
-**Success Rate:** {success_rate:.1f}% ({passed_checks}/{total_checks} checks passed)  
-**Simulation Duration:** {self.results.duration_seconds:.1f} seconds  
-**Timestamp:** {self.results.timestamp.strftime("%Y-%m-%d %H:%M:%S")}  
-
----
-
-## 🎯 Test Scenario
-
-**Objective:** Validate end-to-end task orchestration functionality using CLI-only methods
-
-**Test Task Details:**
-- **Name:** `{self.results.task_name}`
-- **Type:** Test simulation
-- **Command:** `python scripts/test_task.py`
-- **Scheduled Time:** {self.results.scheduled_time}
-- **Expected Behavior:** Execute simple test script and return success
-
----
-
-## 🔍 Validation Results
-
-| Check | Status | Details |
-|-------|--------|---------|
-| Task Creation | {"✅ PASS" if validation["task_created"] else "❌ FAIL"} | ConfigManager.add_task() functionality |
-| Database Access | {"✅ PASS" if validation["database_accessible"] else "❌ FAIL"} | SQLite database connectivity |
-| Configuration Validity | {"✅ PASS" if validation["configuration_valid"] else "❌ FAIL"} | Task configuration integrity |
-| Orchestrator Access | {"✅ PASS" if validation["orchestrator_accessible"] else "❌ FAIL"} | Core orchestration components |
-| Execution Detection | {"✅ PASS" if validation["execution_detected"] else "❌ FAIL"} | Task execution monitoring |
-| Execution Success | {"✅ PASS" if validation["execution_successful"] else "❌ FAIL"} | Task completion with success status |
-
----
-
-## 📋 Detailed Results
-
-### Task Creation
-- **Status:** {"✅ Success" if self.results.created else "❌ Failed"}
-- **Task Name:** `{self.results.task_name}`
-- **Scheduled Time:** {self.results.scheduled_time}
-
-### Execution Monitoring
-- **Execution Detected:** {"Yes" if self.results.execution_detected else "No"}
-- **Execution Successful:** {"Yes" if self.results.execution_successful else "No"}
-
-"""
-
-        # Add execution details if available
-        if self.results.result_data:
-            result = self.results.result_data
-            report += f"""### Execution Details
-- **Status:** {result.get('status', 'N/A')}
-- **Start Time:** {result.get('start_time', 'N/A')}
-- **End Time:** {result.get('end_time', 'N/A')}
-- **Exit Code:** {result.get('exit_code', 'N/A')}
-- **Retry Count:** {result.get('retry_count', 0)}
-
-"""
-
-        # Add errors if any
-        if self.results.errors:
-            report += "### ❌ Errors Encountered\n\n"
-            for i, error in enumerate(self.results.errors, 1):
-                report += f"{i}. {error}\n"
-            report += "\n"
-
-        # Add warnings if any
-        if self.results.warnings:
-            report += "### ⚠️ Warnings\n\n"
-            for i, warning in enumerate(self.results.warnings, 1):
-                report += f"{i}. {warning}\n"
-            report += "\n"
-
-        # Add system information
-        report += f"""---
-
-## 🔧 Environment Information
-
-- **Python Version:** {sys.version.split()[0]}
-- **Operating System:** {os.name}
-- **Working Directory:** {os.getcwd()}
-- **Database Path:** {self.db_path}
-- **Script Location:** {__file__}
-
----
-
-## 📝 Recommendations
-
-"""
-
-        # Add recommendations based on results
-        if success_rate == 100:
-            report += "✅ **All systems operational** - The task orchestrator is functioning correctly.\n\n"
-        elif success_rate >= 80:
-            report += "⚠️ **Minor issues detected** - The orchestrator is mostly functional but has some warnings.\n\n"
-        else:
-            report += "❌ **Critical issues detected** - The orchestrator requires attention before production use.\n\n"
-
-        if not validation["task_created"]:
-            report += "- Fix task creation mechanism in ConfigManager\n"
-        if not validation["execution_detected"]:
-            report += "- Verify orchestrator scheduler is running\n"
-        if not validation["database_accessible"]:
-            report += "- Check database connectivity and permissions\n"
-        if self.results.warnings:
-            report += "- Review and address all warnings listed above\n"
-
-        report += f"""
----
-
-## 🏁 Conclusion
-
-The task orchestrator simulation completed in {self.results.duration_seconds:.1f} seconds with a {success_rate:.1f}% success rate. 
-
-**Next Steps:**
-1. Review any errors or warnings above
-2. Ensure the orchestrator service is running (`python main.py`)
-3. Verify database permissions and connectivity
-4. Re-run simulation after addressing issues
-
----
-
-*Report generated by Task Simulator v1.0 on {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}*
-"""
-
-        return report
+        return last_position
     
-    def run_simulation(self) -> str:
-        """Run the complete simulation and return the report"""
+    def get_windows_task_times(self):
+        """Return (last_run, next_run, last_result) for the Windows task."""
+        try:
+            result = subprocess.run(
+                [
+                    "schtasks",
+                    "/query",
+                    "/tn",
+                    f"\\Orchestrator\\Orc_{self.task_name}",
+                    "/fo",
+                    "LIST",
+                    "/v",
+                ],
+                capture_output=True,
+                text=True,
+            )
+            if result.returncode != 0:
+                return None, None, None
+
+            last_run = next_run = last_result = None
+            for line in result.stdout.split("\n"):
+                if "Last Run Time:" in line:
+                    val = line.split(":", 1)[1].strip()
+                    if val and val.upper() != "N/A":
+                        last_run = val
+                elif "Next Run Time:" in line:
+                    val = line.split(":", 1)[1].strip()
+                    if val and val.upper() != "N/A":
+                        next_run = val
+                elif "Last Result:" in line:
+                    val = line.split(":", 1)[1].strip()
+                    if val and val != "267011":  # 267011 = Task has not yet run
+                        last_result = val
+            return last_run, next_run, last_result
+        except Exception:
+            return None, None, None
+
+    
+    def cleanup(self):
+        """Clean up test artifacts"""
+        print("\n=== CLEANUP ===")
+        if getattr(self, 'keep_task', False) or self.existing_task:
+            print("[INFO] --keep-task flag set – skipping unschedule and output-file deletion")
+            return
         
-        self.log("🚀 Starting Task Orchestrator Simulation")
-        self.log(f"   Task name: {self.task_name}")
-        self.log(f"   Database: {self.db_path}")
+        # Unschedule task
+        try:
+            result = subprocess.run(
+                [sys.executable, "orc.py", "--unschedule", self.task_name],
+                capture_output=True,
+                text=True,
+                cwd=PROJECT_ROOT
+            )
+            
+            if result.returncode == 0:
+                print(f"[OK] Task unscheduled")
+            else:
+                print(f"[WARN] Failed to unschedule task: {result.stderr}")
+                
+        except Exception as e:
+            print(f"[ERROR] Cleanup failed: {e}")
+        
+        # Delete output file
+        if self.output_file.exists():
+            self.output_file.unlink()
+            print(f"[OK] Output file deleted")
+    
+    def apply_updates(self) -> bool:
+        """Apply schedule/command updates via `orc.py --update`."""
+        print("\n=== TASK UPDATE ===")
+
+        cmd: list[str] = [sys.executable, "orc.py", "--update", self.task_name]
+
+        if self.update_schedule:
+            cmd += ["--new-schedule", self.update_schedule]
+            print(f"[INFO] Requesting schedule: {self.update_schedule}")
+
+        if self.marker is not None:
+            # Build command string executed by Windows Task Scheduler
+            python_exe = sys.executable
+            script_path = PROJECT_ROOT / "scripts" / "write_marker.py"
+            parts = [python_exe, str(script_path), "--out", str(self.output_file)]
+            if self.marker:
+                parts += ["--marker", self.marker]
+            new_command = subprocess.list2cmdline(parts)
+            cmd += ["--new-command", new_command]
+            print(f"[INFO] Requesting command : {new_command}")
+
+        print(f"[INFO] Running: {' '.join(cmd)}")
+        result = subprocess.run(cmd, capture_output=True, text=True, cwd=PROJECT_ROOT)
+        if result.returncode == 0:
+            print("[OK] Task update succeeded")
+            return True
+        print("[ERROR] Task update failed")
+        print(f"[DEBUG] stdout: {result.stdout}")
+        print(f"[DEBUG] stderr: {result.stderr}")
+        return False
+
+    def run(self) -> int:
+        """Run complete simulation"""
+        print("=== TASK SIMULATOR START ===")
+        print(f"[INFO] Timestamp: {datetime.now()}")
+        print(f"[INFO] Project root: {PROJECT_ROOT}")
         
         try:
-            # Step 1: Create test task
-            self.log("📝 Step 1: Creating test task...")
-            if not self.create_test_task():
-                self.log("❌ Task creation failed, aborting simulation", "ERROR")
-                return self.generate_report()
+            # Pre-flight checks
+            if not self.preflight_checks():
+                return 1
             
-            # Step 2: Check if orchestrator is running
-            self.log("🔍 Step 2: Checking orchestrator status...")
-            self.check_orchestrator_running()
+            # Create task unless we are monitoring an existing one
+            if not self.existing_task:
+                if not self.create_task():
+                    return 2
+            else:
+                print("\n=== EXISTING TASK MODE ===")
+                print(f"[INFO] Monitoring existing task: {self.task_name}")
+                if self.update_schedule or self.marker is not None:
+                    if not self.apply_updates():
+                        return 3
             
-            # Step 3: Wait for scheduled time and monitor execution
-            scheduled_time = datetime.strptime(self.results.scheduled_time, "%Y-%m-%d %H:%M:%S")
-            wait_time = (scheduled_time - datetime.now()).total_seconds()
+            # Verify scheduling
+            if not self.verify_scheduling():
+                return 3
             
-            if wait_time > 0:
-                self.log(f"⏳ Step 3: Waiting {wait_time:.1f} seconds until scheduled time...")
-                time.sleep(min(wait_time + 10, 70))  # Wait for scheduled time + buffer
+            # Monitor execution
+            if not self.monitor_execution():
+                return 4
             
-            # Step 4: Monitor task execution
-            self.log("👀 Step 4: Monitoring task execution...")
-            self.monitor_task_execution(timeout_minutes=3)
-            
-            # Step 5: Generate report
-            self.log("📊 Step 5: Generating report...")
+            print("\n=== SIMULATION SUCCESSFUL ===")
+            print(f"[OK] Task '{self.task_name}' completed full lifecycle")
+            return 0
             
         except KeyboardInterrupt:
-            self.log("⚠️  Simulation interrupted by user", "WARNING")
-            self.results.warnings.append("Simulation interrupted by user")
+            print("\n[ABORT] Simulation interrupted by user")
+            return 5
         except Exception as e:
-            self.log(f"❌ Simulation failed: {e}", "ERROR")
-            self.results.errors.append(f"Simulation error: {e}")
+            print(f"\n[ERROR] Unexpected error: {e}")
+            return 6
         finally:
-            # Cleanup
-            self.cleanup_test_task()
-            self.log("✅ Simulation completed")
-        
-        return self.generate_report()
+            # Always cleanup
+            self.cleanup()
+            print("\n=== TASK SIMULATOR END ===")
+
 
 def main():
-    """Main entry point"""
+    """Entry point"""
+    parser = argparse.ArgumentParser(description="Task Simulator – Automated Task Lifecycle Testing")
+    parser.add_argument('--keep-task', action='store_true', help='Do not unschedule or delete the task after simulation completes')
+    parser.add_argument('--update-schedule', metavar='CRON', help='For existing task: new cron schedule (e.g. "*/3 * * * *")')
+    parser.add_argument('--marker', metavar='TEXT', help='For existing task: append TEXT marker line to output file each run')
+    parser.add_argument('--use-existing', metavar='TASK_NAME', help='Skip creation and monitor an already-scheduled task')
+    args = parser.parse_args()
+    simulator = TaskSimulator(
+        keep_task=args.keep_task,
+        existing_task=args.use_existing,
+        update_schedule=args.update_schedule,
+        marker=args.marker,
+    )
+    exit_code = simulator.run()
     
-    print("=" * 60)
-    print("  TASK ORCHESTRATOR COMPREHENSIVE SIMULATOR")
-    print("=" * 60)
-    print()
+    # Print summary
+    print(f"\nExit code: {exit_code}")
+    print("Exit codes: 0=success, 1=preflight failed, 2=creation failed, " +
+          "3=scheduling failed, 4=execution failed, 5=interrupted, 6=error")
     
-    # Initialize simulator
-    simulator = TaskSimulator()
-    
-    # Run simulation
-    report = simulator.run_simulation()
-    
-    # Save report to file
-    report_filename = f"simulation_report_{int(time.time())}.md"
-    with open(report_filename, "w") as f:
-        f.write(report)
-    
-    print()
-    print("=" * 60)
-    print("  SIMULATION COMPLETE")
-    print("=" * 60)
-    print(f"📄 Report saved to: {report_filename}")
-    print()
-    print("Report preview:")
-    print("-" * 40)
-    print(report[:500] + "..." if len(report) > 500 else report)
+    sys.exit(exit_code)
+
 
 if __name__ == "__main__":
     main()

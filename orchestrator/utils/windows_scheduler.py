@@ -41,36 +41,45 @@ class WindowsScheduler:  # noqa: R0903 – thin wrapper
     def create_task(
         self,
         task_name: str,
-        command: str,
+        command: str,  # This will be ignored - we use orc.py
         schedule_trigger: Dict[str, str],
         description: Optional[str] = None,
     ) -> bool:
-        """Create or replace a scheduled task.
-
-        Parameters are *very* trimmed down for now: only basic triggers (daily,
-        hourly, minute) supported via `schedule_trigger` mapping produced by
-        :pyclass:`orchestrator.utils.cron_converter.CronConverter`.
-        """
-
+        """Create Windows scheduled task that calls orc.py --task task_name"""
+        
         full_name = self.TASK_PREFIX + task_name
+        
+        # Get project root directory
+        import inspect
+        import os
+        current_file = inspect.getfile(inspect.currentframe())
+        project_root = os.path.dirname(os.path.dirname(os.path.dirname(current_file)))
+        
+        # Command always calls orc.py regardless of original task command
+        orc_command = f'python "{os.path.join(project_root, "orc.py")}" --task {task_name}'
+        
         cmd = CREATE_CMD_BASE + [
             "/TN",
             str(Path(self.TASK_PATH) / full_name),
             "/TR",
-            command,
+            orc_command,  # Use orc.py command
             "/RL",
             "HIGHEST",
+            "/RU",
+            "SYSTEM",
         ]
-
+        
+        # Add working directory
+        cmd.extend(["/SD", project_root])
+        
         if description:
-            cmd += ["/RU", "SYSTEM", "/DE", description]
-        else:
-            cmd += ["/RU", "SYSTEM"]
-
-        # Append schedule parameters (already validated)
+            cmd.extend(["/DE", description])
+        
+        # Append schedule parameters
         for flag, value in schedule_trigger.items():
             cmd += [f"/{flag.upper()}", str(value)] if value else [f"/{flag.upper()}"]
-
+        
+        self.logger.info(f"Creating Windows task with command: {orc_command}")
         return self._run(cmd)
 
     def delete_task(self, task_name: str) -> bool:

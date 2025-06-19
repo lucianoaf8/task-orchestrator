@@ -1,358 +1,243 @@
-"""Main entry point for the Task Python Orchestrator.
-
-This module provides the command-line interface for the orchestrator.
-Currently maintains the old daemon-style orchestrator for backward compatibility.
+#!/usr/bin/env python3
+"""
+Main entry point for Task Python Orchestrator
+Manages tasks via CLI or GUI, triggers scheduling via orc.py
 """
 
-import os
 import sys
-import time
-import logging
-import smtplib
-import json
 import subprocess
-import threading
-from datetime import datetime, timedelta
-from typing import Dict, List, Optional
-from email.mime.text import MIMEText
-from croniter import croniter
-from dataclasses import dataclass
+import logging
+from pathlib import Path
 
-from orchestrator.core.config_manager import ConfigManager
+# Ensure project root is in path
+PROJECT_ROOT = Path(__file__).resolve().parent
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
 
-@dataclass
-class TaskResult:
-    task_name: str
-    status: str  # SUCCESS, FAILED, SKIPPED, RUNNING
-    start_time: Optional[datetime] = None
-    end_time: Optional[datetime] = None
-    exit_code: Optional[int] = None
-    output: str = ""
-    error: str = ""
-    retry_count: int = 0
-
-class TaskManager:
-    def __init__(self, db_path: str = "data/orchestrator.db", master_password: str | None = None):
-        self.config_manager = ConfigManager(db_path, master_password)
-        self.running_tasks = {}
-        self.setup_logging()
-        # Ensure core condition tasks exist so that dependency checks work reliably.
-        self._ensure_condition_tasks()
+def trigger_orc_scheduling(task_name: str) -> bool:
+    """
+    Trigger orc.py to schedule a task after creation/edit
+    This is the key integration point from the documented flow
+    """
+    try:
+        result = subprocess.run([
+            sys.executable, 'orc.py', '--schedule', task_name
+        ], capture_output=True, text=True, cwd=PROJECT_ROOT)
         
-    def setup_logging(self):
-        log_dir = self.config_manager.get_config('logging', 'directory', 'logs')
-        os.makedirs(log_dir, exist_ok=True)
-        
-        log_level = getattr(logging, self.config_manager.get_config('logging', 'level', 'INFO'))
-        
-        # Create daily log file
-        log_file = os.path.join(log_dir, f"orchestrator_{datetime.now().strftime('%Y%m%d')}.log")
-        
-        logging.basicConfig(
-            level=log_level,
-            format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-            handlers=[
-                logging.FileHandler(log_file),
-                logging.StreamHandler(sys.stdout)
-            ]
-        )
-        self.logger = logging.getLogger(__name__)
-
-        
-    def check_dependencies(self, task_name: str) -> tuple[bool, str]:
-        """Check if all dependencies are satisfied"""
-        task_config = self.config_manager.get_task(task_name)
-        dependencies = task_config.get('dependencies', [])
-        
-        if not dependencies:
-            return True, "No dependencies"
+        if result.returncode == 0:
+            print(f"✓ Task '{task_name}' scheduled successfully")
+            return True
+        else:
+            print(f"✗ Failed to schedule task '{task_name}': {result.stderr}")
+            return False
             
-        failed_deps = []
-        for dep in dependencies:
-            dep_config = self.config_manager.get_task(dep)
-            if not dep_config:
-                failed_deps.append(f"{dep} (not found)")
-                continue
-                
-            # For condition tasks, run them on-demand
-            if dep_config.get('type') == 'condition':
-                result = self.run_task(dep)
-                if result.status != 'SUCCESS':
-                    failed_deps.append(dep)
+    except Exception as e:
+        print(f"✗ Error calling orc.py for task '{task_name}': {e}")
+        return False
+
+def show_dashboard():
+    """Launch web dashboard"""
+    try:
+        from orchestrator.web.dashboard import main as dashboard_main
+        print("Starting web dashboard...")
+        dashboard_main()
+    except Exception as e:
+        print(f"Error starting dashboard: {e}")
+        return False
+
+def show_status():
+    """Show current system status"""
+    print("=== Orchestrator Status ===")
+    
+    # Show configured tasks
+    try:
+        from orchestrator.core.config_manager import ConfigManager
+        config_manager = ConfigManager()
+        tasks = config_manager.get_all_tasks()
+        print(f"Configured tasks: {len(tasks)}")
+        for name, task in tasks.items():
+            status = "enabled" if task.get('enabled', True) else "disabled"
+            print(f"  - {name} ({task.get('type', 'unknown')}): {status}")
+    except Exception as e:
+        print(f"Error reading task configuration: {e}")
+    
+    # Show scheduled tasks via orc.py
+    print("\nWindows Scheduled Tasks:")
+    try:
+        result = subprocess.run([
+            sys.executable, 'orc.py', '--list'
+        ], capture_output=True, text=True, cwd=PROJECT_ROOT)
+        
+        if result.returncode == 0:
+            print(result.stdout)
+        else:
+            print(f"Error listing scheduled tasks: {result.stderr}")
+    except Exception as e:
+        print(f"Error calling orc.py --list: {e}")
+
+def interactive_mode():
+    """Interactive task management mode"""
+    from orchestrator.core.config_manager import ConfigManager
+    
+    config_manager = ConfigManager()
+    
+    while True:
+        print("\n=== Task Orchestrator ===")
+        print("1. View tasks")
+        print("2. Add task")
+        print("3. Edit task")
+        print("4. Delete task")
+        print("5. Show status")
+        print("6. Launch dashboard")
+        print("7. Exit")
+        
+        choice = input("\nEnter choice (1-7): ").strip()
+        
+        if choice == '1':
+            # View tasks
+            tasks = config_manager.get_all_tasks()
+            if not tasks:
+                print("No tasks configured.")
             else:
-                # Check recent execution history
-                history = self.config_manager.get_task_history(dep, 1)
-                if not history or history[0]['status'] != 'SUCCESS':
-                    failed_deps.append(dep)
+                print("\nConfigured Tasks:")
+                for name, task in tasks.items():
+                    status = "enabled" if task.get('enabled', True) else "disabled"
+                    schedule = task.get('schedule', 'manual')
+                    print(f"  {name}: {task['type']} | {schedule} | {status}")
         
-        if failed_deps:
-            return False, f"Failed dependencies: {', '.join(failed_deps)}"
-        return True, "All dependencies satisfied"
-    
-    def _ensure_condition_tasks(self) -> None:
-        """Ensure essential condition tasks are present in the DB.
-
-        Currently registers the ``check_db_connection`` task so it can be
-        invoked on-demand whenever another task lists it as a dependency.
-        """
-        if self.config_manager.get_task("check_db_connection"):
-            return  # Already configured
-
-        script_path = os.path.join(os.path.dirname(__file__), "scripts", "checks", "check_db_connection.py")
-        command = f"{sys.executable} {script_path}"
-
-        # Register the task as a *condition* type, executed only when requested
-        # by dependency resolution (no schedule).
-        self.config_manager.add_task(
-            name="check_db_connection",
-            task_type="condition",
-            command=command,
-            schedule=None,
-            timeout=60,
-            retry_count=0,
-            retry_delay=0,
-            dependencies=[],
-            enabled=True,
-        )
-
-    def run_task(self, task_name: str) -> TaskResult:
-        """Execute a single task"""
-        if task_name in self.running_tasks:
-            self.logger.warning(f"Task {task_name} is already running")
-            return TaskResult(task_name, "SKIPPED", error="Task already running")
-        
-        task_config = self.config_manager.get_task(task_name)
-        if not task_config:
-            return TaskResult(task_name, "FAILED", error="Task not found")
+        elif choice == '2':
+            # Add task
+            print("\n--- Add New Task ---")
+            name = input("Task name: ").strip()
+            if not name:
+                print("Task name required.")
+                continue
             
-        result = TaskResult(task_name, "RUNNING", start_time=datetime.now())
-        self.running_tasks[task_name] = result
-        self.logger.info(f"Starting task: {task_name}")
-        
-        try:
-            # Check dependencies
-            deps_ok, deps_msg = self.check_dependencies(task_name)
-            if not deps_ok:
-                result.status = "SKIPPED"
-                result.error = deps_msg
-                result.end_time = datetime.now()
-                self.logger.warning(f"Task {task_name} skipped: {deps_msg}")
-                return result
+            task_type = input("Task type (data_job/condition/report/maintenance): ").strip()
+            command = input("Command to execute: ").strip()
+            schedule = input("Cron schedule (leave empty for manual): ").strip()
             
-            # Execute command
-            command = task_config['command']
-            timeout = task_config.get('timeout', 3600)
-            
-            process = subprocess.Popen(
-                command.split(),
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=True
-            )
+            if not command:
+                print("Command is required.")
+                continue
             
             try:
-                stdout, stderr = process.communicate(timeout=timeout)
-                result.exit_code = process.returncode
-                result.output = stdout
-                result.error = stderr
+                config_manager.add_task(
+                    name=name,
+                    task_type=task_type or 'data_job',
+                    command=command,
+                    schedule=schedule if schedule else None,
+                    enabled=True
+                )
+                print(f"✓ Task '{name}' saved to database")
                 
-                if result.exit_code == 0:
-                    result.status = "SUCCESS"
-                    self.logger.info(f"Task {task_name} completed successfully")
-                else:
-                    result.status = "FAILED"
-                    self.logger.error(f"Task {task_name} failed with exit code {result.exit_code}")
-                    
-            except subprocess.TimeoutExpired:
-                process.kill()
-                result.status = "FAILED"
-                result.error = f"Task timed out after {timeout} seconds"
-                self.logger.error(f"Task {task_name} timed out")
+                # Trigger scheduling via orc.py (KEY INTEGRATION POINT)
+                if schedule:
+                    trigger_orc_scheduling(name)
                 
-        except Exception as e:
-            result.status = "FAILED"
-            result.error = str(e)
-            self.logger.error(f"Task {task_name} failed with exception: {e}")
-        
-        finally:
-            result.end_time = datetime.now()
-            self.running_tasks.pop(task_name, None)
-            
-            # Store result in database
-            self.config_manager.save_task_result(result)
-            
-            # Send notification
-            self.send_notification(result)
-            
-        return result
-    
-    def run_task_with_retry(self, task_name: str) -> TaskResult:
-        """Run task with retry logic"""
-        task_config = self.config_manager.get_task(task_name)
-        retry_count = task_config.get('retry_count', 0)
-        retry_delay = task_config.get('retry_delay', 300)
-        
-        for attempt in range(retry_count + 1):
-            result = self.run_task(task_name)
-            result.retry_count = attempt
-            
-            if result.status == "SUCCESS" or attempt == retry_count:
-                return result
-                
-            if result.status == "FAILED":
-                self.logger.info(f"Retrying task {task_name} in {retry_delay} seconds (attempt {attempt + 1}/{retry_count + 1})")
-                time.sleep(retry_delay)
-                
-        return result
-    
-    def send_notification(self, result: TaskResult):
-        """Send email notification for task result"""
-        try:
-            # Get email configuration
-            smtp_server = self.config_manager.get_config('email', 'smtp_server', 'smtp.office365.com')
-            smtp_port = int(self.config_manager.get_config('email', 'smtp_port', '587'))
-            sender_email = self.config_manager.get_credential('email_username')
-            password = self.config_manager.get_credential('email_password')
-            recipients_json = self.config_manager.get_config('email', 'recipients', '[]')
-            recipients = json.loads(recipients_json) if recipients_json else []
-            
-            if not all([sender_email, password, recipients]):
-                self.logger.warning("Email configuration incomplete, skipping notification")
-                return
-            
-            # Only send notifications for failures and retries
-            send_on_failure = self.config_manager.get_config('email', 'send_on_failure', 'true').lower() == 'true'
-            send_on_retry = self.config_manager.get_config('email', 'send_on_retry', 'true').lower() == 'true'
-            send_on_success = self.config_manager.get_config('email', 'send_on_success', 'false').lower() == 'true'
-            
-            should_send = (
-                (result.status == "FAILED" and send_on_failure) or
-                (result.status == "SUCCESS" and result.retry_count > 0 and send_on_retry) or
-                (result.status == "SUCCESS" and result.retry_count == 0 and send_on_success)
-            )
-            
-            if not should_send:
-                return
-                
-            subject = f"Task {result.task_name}: {result.status}"
-            
-            duration = ""
-            if result.start_time and result.end_time:
-                duration = str(result.end_time - result.start_time)
-            
-            body = f"""
-Task: {result.task_name}
-Status: {result.status}
-Start Time: {result.start_time}
-End Time: {result.end_time}
-Duration: {duration}
-Exit Code: {result.exit_code}
-Retry Count: {result.retry_count}
-
-Output:
-{result.output}
-
-Error:
-{result.error}
-            """
-            
-            msg = MIMEText(body)
-            msg['Subject'] = subject
-            msg['From'] = sender_email
-            msg['To'] = ', '.join(recipients)
-            
-            with smtplib.SMTP(smtp_server, smtp_port) as server:
-                server.starttls()
-                server.login(sender_email, password)
-                server.send_message(msg)
-                self.logger.info(f"Notification sent for task {result.task_name}")
-                    
-        except Exception as e:
-            self.logger.error(f"Failed to send notification: {e}")
-    
-    def get_next_execution_time(self, task_name: str) -> Optional[datetime]:
-        """Get next scheduled execution time for a task"""
-        task_config = self.config_manager.get_task(task_name)
-        schedule = task_config.get('schedule') if task_config else None
-        
-        if not schedule:
-            return None
-            
-        cron = croniter(schedule, datetime.now())
-        return cron.get_next(datetime)
-    
-    def run_scheduler(self):
-        """Main scheduler loop"""
-        self.logger.info("Starting task scheduler")
-        last_minute_check = {}
-        
-        while True:
-            try:
-                current_time = datetime.now()
-                current_minute = current_time.strftime('%Y%m%d%H%M')
-                
-                for task_name, task_config in self.config_manager.get_all_tasks().items():
-                    schedule = task_config.get('schedule')
-                    if not schedule:
-                        continue
-                        
-                    # Prevent duplicate runs within same minute
-                    task_minute_key = f"{task_name}_{current_minute}"
-                    if task_minute_key in last_minute_check:
-                        continue
-                    
-                    # Check if task should run now
-                    cron = croniter(schedule, current_time)
-                    prev_run = cron.get_prev(datetime)
-                    
-                    # If the previous run time is within the last minute
-                    if (current_time - prev_run).total_seconds() < 60:
-                        last_minute_check[task_minute_key] = True
-                        
-                        # Run the task in a separate thread
-                        self.logger.info(f"Scheduling task: {task_name}")
-                        thread = threading.Thread(
-                            target=self.run_task_with_retry, 
-                            args=(task_name,)
-                        )
-                        thread.daemon = True
-                        thread.start()
-                
-                # Cleanup old minute checks to prevent memory growth
-                if len(last_minute_check) > 1000:
-                    last_minute_check.clear()
-                
-                # Sleep for 30 seconds before next check
-                time.sleep(30)
-                
-            except KeyboardInterrupt:
-                self.logger.info("Scheduler stopped by user")
-                break
             except Exception as e:
-                self.logger.error(f"Scheduler error: {e}")
-                time.sleep(60)  # Wait a minute on error
+                print(f"Error saving task: {e}")
+        
+        elif choice == '3':
+            # Edit task
+            name = input("Task name to edit: ").strip()
+            task = config_manager.get_task(name)
+            if not task:
+                print(f"Task '{name}' not found.")
+                continue
+            
+            print(f"\nCurrent task '{name}':")
+            print(f"  Type: {task['type']}")
+            print(f"  Command: {task['command']}")
+            print(f"  Schedule: {task.get('schedule', 'manual')}")
+            
+            new_command = input(f"New command (current: {task['command']}): ").strip()
+            new_schedule = input(f"New schedule (current: {task.get('schedule', 'manual')}): ").strip()
+            
+            # Update task
+            task['command'] = new_command if new_command else task['command']
+            task['schedule'] = new_schedule if new_schedule else task.get('schedule')
+            
+            try:
+                config_manager.add_task(**task)
+                print(f"✓ Task '{name}' updated")
+                
+                # Re-schedule if has schedule
+                if task.get('schedule'):
+                    trigger_orc_scheduling(name)
+                    
+            except Exception as e:
+                print(f"Error updating task: {e}")
+        
+        elif choice == '4':
+            # Delete task
+            name = input("Task name to delete: ").strip()
+            task = config_manager.get_task(name)
+            if not task:
+                print(f"Task '{name}' not found.")
+                continue
+            
+            confirm = input(f"Delete task '{name}'? (y/N): ").strip().lower()
+            if confirm == 'y':
+                try:
+                    # Unschedule first
+                    subprocess.run([
+                        sys.executable, 'orc.py', '--unschedule', name
+                    ], capture_output=True, text=True, cwd=PROJECT_ROOT)
+                    
+                    # Disable in database
+                    task['enabled'] = False
+                    config_manager.add_task(**task)
+                    print(f"✓ Task '{name}' deleted and unscheduled")
+                    
+                except Exception as e:
+                    print(f"Error deleting task: {e}")
+        
+        elif choice == '5':
+            show_status()
+        
+        elif choice == '6':
+            show_dashboard()
+            break
+        
+        elif choice == '7':
+            print("Goodbye!")
+            break
+        
+        else:
+            print("Invalid choice. Please try again.")
 
-# ---------------------------------------------------------------------------
-# Phase-3 refactor: expose *legacy* daemon and switch to new CLI entry point
-# ---------------------------------------------------------------------------
+def main():
+    """Main entry point following documented flow"""
+    
+    # Handle command line arguments
+    if len(sys.argv) > 1:
+        if sys.argv[1] == 'dashboard':
+            show_dashboard()
+        elif sys.argv[1] == 'status':
+            show_status()
+        elif sys.argv[1] == 'cli':
+            # Delegate to existing CLI for advanced operations
+            # Trim the 'cli' token before delegating so orchestrator.cli parser
+            # receives arguments as if invoked directly.
+            from orchestrator.cli import cli_main
 
-def legacy_daemon() -> None:  # noqa: D401
-    """Run the original polling scheduler (back-compat only)."""
-
-    import getpass
-
-    master_password = getpass.getpass("Master password (blank if none): ") or None
-    manager = TaskManager(master_password=master_password)
-    manager.run_scheduler()
-
-
-def main() -> None:  # pragma: no cover – CLI handoff
-    """Delegate to :pymod:`orchestrator.cli` (new unified CLI)."""
-
-    from orchestrator.cli import cli_main  # local import avoids cycles
-
-    cli_main()
-
+            original_argv = sys.argv.copy()
+            try:
+                sys.argv = [sys.argv[0]] + sys.argv[2:]
+                cli_main()
+            finally:
+                # Restore argv to avoid side-effects when main() returns
+                sys.argv = original_argv
+        else:
+            print("Usage: python main.py [dashboard|status|cli]")
+            print("  dashboard - Launch web interface")
+            print("  status    - Show system status")
+            print("  cli       - Advanced CLI operations")
+            print("  (no args) - Interactive mode")
+    else:
+        # Interactive mode as primary interface
+        interactive_mode()
 
 if __name__ == "__main__":
     main()

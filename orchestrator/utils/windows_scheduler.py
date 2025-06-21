@@ -1,4 +1,4 @@
-"""Wrapper around Windows *schtasks.exe* commands - FINAL WORKING VERSION
+﻿"""Wrapper around Windows *schtasks.exe* commands - FINAL WORKING VERSION
 
 This version:
 1. Removes invalid /SD flag
@@ -60,7 +60,7 @@ class WindowsScheduler:
         # Build command string for /TR – avoid extra escaping quotes
         orc_py = project_root / "orc.py"
         # Paths do not contain spaces, so quoting only the script path keeps things simple
-        orc_command = f"{python_exe} {orc_py} --task {task_name}"
+        orc_command = f\
         
         # Build schtasks command
         cmd = CREATE_CMD_BASE + [

@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """Simple dependency validation utility (Phase-5).
 
 This script is meant to be invoked by Windows Task Scheduler *before* a task
@@ -24,7 +24,7 @@ from typing import List, Tuple
 try:
     import requests  # lightweight dependency; widely available
 except ImportError:  # pragma: no cover
-    requests = None  # type: ignore
+    requests = None  # type: ignore[assignment][assignment]
 
 from orchestrator.core.config_manager import ConfigManager
 
@@ -105,3 +105,5 @@ def main(argv: List[str] | None = None) -> int:  # noqa: D401
 
 if __name__ == "__main__":
     sys.exit(main())
+
+

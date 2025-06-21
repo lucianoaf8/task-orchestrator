@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """
 Main entry point for Task Python Orchestrator
 Manages tasks via CLI or GUI, triggers scheduling via orc.py
@@ -21,7 +21,7 @@ def trigger_orc_scheduling(task_name: str) -> bool:
     """
     try:
         result = subprocess.run([
-            sys.executable, 'orc.py', '--schedule', task_name
+            sys.executable, str(PROJECT_ROOT / "orc.py"), "--schedule", task_name
         ], capture_output=True, text=True, cwd=PROJECT_ROOT)
         
         if result.returncode == 0:
@@ -182,7 +182,7 @@ def interactive_mode():
                 try:
                     # Unschedule first
                     subprocess.run([
-                        sys.executable, 'orc.py', '--unschedule', name
+                        sys.executable, str(PROJECT_ROOT / "orc.py"), "--unschedule", name
                     ], capture_output=True, text=True, cwd=PROJECT_ROOT)
                     
                     # Disable in database
@@ -241,3 +241,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

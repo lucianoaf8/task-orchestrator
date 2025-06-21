@@ -1,4 +1,4 @@
-import subprocess
+﻿import subprocess
 import sys
 import os
 from pathlib import Path
@@ -36,7 +36,7 @@ def call_orc_py(operation: str, task_name: str = None) -> tuple[bool, str]:
     """
     try:
         project_root = Path(__file__).resolve().parent.parent.parent
-        cmd = [sys.executable, 'orc.py']
+        orc_py = project_root / "orc.py"`n        cmd = [sys.executable, str(orc_py)]
         
         if operation == 'schedule' and task_name:
             cmd.extend(['--schedule', task_name])

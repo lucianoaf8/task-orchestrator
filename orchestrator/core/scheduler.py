@@ -12,11 +12,13 @@ incrementally in later sub-phases.
 from __future__ import annotations
 
 import logging
+from typing import Tuple
 from typing import Dict, List, Optional
 
 from orchestrator.core.config_manager import ConfigManager
 from orchestrator.core.task_result import TaskResult
 from orchestrator.utils.cron_converter import CronConverter
+from orchestrator.core.execution_engine import ExecutionEngine
 from orchestrator.utils.windows_scheduler import WindowsScheduler
 
 __all__ = ["TaskScheduler"]
@@ -28,6 +30,7 @@ class TaskScheduler:  # noqa: R0903 – intentionally minimal scaffold
     def __init__(self, master_password: Optional[str] = None):
         self.config_manager = ConfigManager(master_password=master_password)
         self.windows_scheduler = WindowsScheduler()
+        self.execution_engine = ExecutionEngine(master_password=master_password)
         self.logger = logging.getLogger(self.__class__.__name__)
 
     # ------------------------------------------------------------------
@@ -134,34 +137,16 @@ class TaskScheduler:  # noqa: R0903 – intentionally minimal scaffold
     # Execution path (called *by* Windows Task Scheduler)
     # ------------------------------------------------------------------
     def execute_task(self, task_name: str) -> TaskResult:  # noqa: D401
-        """Execute a task immediately and return its :class:`TaskResult`."""
-        # For now reuse legacy TaskManager execution path until Phase 3.
-        from orchestrator.legacy.task_manager import TaskManager  # type: ignore  # legacy support
-
-        manager = TaskManager()
-        # Execute task with full lifecycle
-        legacy_result = manager.run_task_with_retry(task_name)
-
-        # Convert to TaskResult consistently
-        if isinstance(legacy_result, TaskResult):
-            result = legacy_result
-        else:
-            result = TaskResult.from_dict(legacy_result.to_dict())
-
-        # Persist to database for history queries
-        try:
-            self.config_manager.save_task_result(result)
-        except Exception as exc:  # pragma: no cover – do not fail task on DB error
-            self.logger.error("Failed to persist task result: %s", exc)
-
-        return result
+        """Execute task via :class:`ExecutionEngine` and return result."""
+        return self.execution_engine.execute_task(task_name)
 
     # Placeholder helpers ------------------------------------------------
     def check_dependencies(self, task_name: str) -> tuple[bool, str]:
-        """Stub – dependency checks handled in legacy TaskManager for now."""
-        from orchestrator.legacy.task_manager import TaskManager  # type: ignore
-
-        return TaskManager().check_dependencies(task_name)
+        """Delegate to ExecutionEngine internal dependency check."""
+        task = self.config_manager.get_task(task_name)
+        if not task:
+            return False, "Task not found"
+        return self.execution_engine._check_dependencies(task)
 
     def validate_task_config(self, task_name: str) -> tuple[bool, str]:
         """Very light validation of task config."""

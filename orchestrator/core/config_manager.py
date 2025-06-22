@@ -5,13 +5,19 @@ import base64
 import platform
 from datetime import datetime
 from pathlib import Path
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, Any as AnyType
+
+from .migrations import apply_pending_migrations
+from .config_schema import CONFIG_SCHEMA
+from .database_transaction import DatabaseTransaction, TransactionError
+from orchestrator.utils.windows_scheduler import WindowsScheduler
+from orchestrator.utils.cron_converter import CronConverter
 from cryptography.fernet import Fernet
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 
 class ConfigManager:
-    def __init__(self, db_path: str = "data/orchestrator.db", master_password: str = None):
+    def __init__(self, db_path: str = "data/orchestrator.db", master_password: Optional[str] = None):
         """Create a new `ConfigManager`.
 
         When the orchestrator is executed by Windows Task Scheduler the
@@ -39,6 +45,7 @@ class ConfigManager:
         self.db = sqlite3.connect(self.db_path, check_same_thread=False)
         self.cipher = self._init_cipher(master_password) if master_password else None
         self._init_db()
+        self._check_migrations()
         
     def _init_cipher(self, password: str):
         """Initialize encryption cipher with system-specific salt"""
@@ -133,8 +140,8 @@ class ConfigManager:
                 # Propagate unknown errors
                 raise
     
-    def add_task(self, name: str, task_type: str, command: str, 
-                 schedule: str = None, **kwargs):
+    def add_task(self, name: str, task_type: str, command: str,
+                 schedule: Optional[str] = None, **kwargs):
         """Add or update task configuration"""
         self.db.execute("""
             INSERT OR REPLACE INTO tasks 
@@ -161,6 +168,37 @@ class ConfigManager:
             return task
         return None
     
+    # ------------------------------------------------------------------
+    # Query helpers (Phase C1) -----------------------------------------
+    # ------------------------------------------------------------------
+    def get_tasks_paginated(
+        self,
+        *,
+        limit: int = 100,
+        offset: int = 0,
+        enabled_only: bool = True,
+        fields: list[str] | None = None,
+    ) -> list[Dict[str, Any]]:
+        """Return up to *limit* tasks starting at *offset*.
+
+        Provides light pagination for dashboards / APIs.
+        """
+        cols = ", ".join(fields) if fields else "*"
+        sql = f"SELECT {cols} FROM tasks"
+        if enabled_only:
+            sql += " WHERE enabled=1"
+        sql += " ORDER BY name LIMIT ? OFFSET ?"
+        cursor = self.db.execute(sql, (limit, offset))
+        rows = cursor.fetchall()
+        columns = [desc[0] for desc in cursor.description]
+        result: list[Dict[str, Any]] = []
+        for row in rows:
+            task = dict(zip(columns, row))
+            if "dependencies" in task:
+                task["dependencies"] = json.loads(task["dependencies"])
+            result.append(task)
+        return result
+
     def get_all_tasks(self) -> Dict[str, Dict[str, Any]]:
         """Get all enabled tasks"""
         cursor = self.db.execute("SELECT * FROM tasks WHERE enabled=1")
@@ -193,18 +231,79 @@ class ConfigManager:
                 return result[0].decode()
         return None
     
-    def store_config(self, section: str, key: str, value: str):
-        """Store configuration value"""
-        self.db.execute("INSERT OR REPLACE INTO config VALUES (?, ?, ?)", 
-                       (section, key, value))
+    # ------------------------------------------------------------------
+    # Configuration validation helpers
+    # ------------------------------------------------------------------
+
+    def _validate_config(self, section: str, key: str, value):
+        """Validate *value* against :pydata:`CONFIG_SCHEMA`."""
+        if section not in CONFIG_SCHEMA or key not in CONFIG_SCHEMA[section]:
+            # Unknown keys allowed for forward compatibility
+            return value
+
+        rules = CONFIG_SCHEMA[section][key]
+        expected_type = rules.get("type")
+        if expected_type and not isinstance(value, expected_type):
+            raise TypeError(f"{section}.{key} must be {expected_type.__name__}")
+
+        if "range" in rules:
+            lo, hi = rules["range"]
+            if not (lo <= value <= hi):
+                raise ValueError(f"{section}.{key} out of range {lo}-{hi}")
+
+        if validator := rules.get("validator"):
+            value = validator(value)
+        return value
+
+    def store_config(self, section: str, key: str, value: AnyType):
+        """Validate and persist configuration value."""
+        validated_value = self._validate_config(section, key, value)
+        self.db.execute(
+            "INSERT OR REPLACE INTO config VALUES (?, ?, ?)",
+            (section, key, validated_value),
+        )
         self.db.commit()
     
-    def get_config(self, section: str, key: str, default: str = None) -> Optional[str]:
+    def get_config(self, section: str, key: str, default: Optional[str] = None) -> Optional[str]:
         """Get configuration value"""
         result = self.db.execute("SELECT value FROM config WHERE section=? AND key=?", 
                                 (section, key)).fetchone()
         return result[0] if result else default
     
+    def _check_migrations(self) -> None:
+        """Apply pending database migrations safely."""
+        apply_pending_migrations(self.db)
+
+    # ------------------------------------------------------------------
+    # Transactional operations
+    # ------------------------------------------------------------------
+    def add_task_with_scheduling(self, task_data: Dict[str, Any]):
+        """Atomically insert a task and schedule it if enabled.
+
+        Raises TransactionError if scheduling fails so that the DB changes
+        are rolled back.
+        """
+        with DatabaseTransaction(self.db):
+            self.add_task(**task_data)
+            if task_data.get("enabled") and task_data.get("schedule"):
+                if not self._schedule_task(task_data["name"]):
+                    raise TransactionError("Scheduling failed")
+
+    # ------------------------------------------------------------------
+    # Internal helpers
+    # ------------------------------------------------------------------
+    def _schedule_task(self, task_name: str) -> bool:
+        """Schedule *task_name* via Windows Task Scheduler."""
+        task = self.get_task(task_name)
+        if not task or not task.get("schedule"):
+            return False
+        scheduler = WindowsScheduler()
+        params = CronConverter.cron_to_schtasks_params(task["schedule"])
+        return scheduler.create_task(task_name, task["command"], params, description=f"Orchestrator – {task_name}")
+
+    # ------------------------------------------------------------------
+    # Existing API below
+    # ------------------------------------------------------------------
     def save_task_result(self, result):
         """Save task execution result"""
         self.db.execute("""

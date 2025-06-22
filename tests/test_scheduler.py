@@ -64,17 +64,12 @@ def test_scheduler_unschedule(scheduler):
 
 
 def test_scheduler_execute_task(monkeypatch, scheduler):
-    # Patch main.TaskManager.run_task_with_retry to return TaskResult
     dummy_result = TaskResult(task_name="dummy", status="SUCCESS")
 
-    class DummyTM:  # noqa: D401
-        def run_task_with_retry(self, task_name):  # noqa: D401
-            return dummy_result
+    # Patch ExecutionEngine.execute_task to return dummy_result
+    from orchestrator.core.execution_engine import ExecutionEngine
 
-        def check_dependencies(self, task_name):  # noqa: D401
-            return True, "OK"
-
-    monkeypatch.setitem(sys.modules, "orchestrator.legacy.task_manager", SimpleNamespace(TaskManager=DummyTM))
+    monkeypatch.setattr(ExecutionEngine, "execute_task", lambda self, name: dummy_result)
 
     result = scheduler.execute_task("dummy")
     assert isinstance(result, TaskResult)

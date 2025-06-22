@@ -8,6 +8,7 @@ import json
 import sys
 from typing import Any
 
+from orchestrator.services import get_task_service, get_scheduling_service
 from orchestrator.core.scheduler import TaskScheduler
 
 from orchestrator.web.dashboard import main as dashboard_main
@@ -69,9 +70,13 @@ def create_parser() -> argparse.ArgumentParser:  # noqa: D401
 # Command handlers -----------------------------------------------------------
 # ---------------------------------------------------------------------------
 
-def handle_schedule_command(args, scheduler: TaskScheduler):  # noqa: D401
+def handle_schedule_command(args, scheduler: TaskScheduler) -> int:  # noqa: D401
+    # Lazy init to avoid cost when not needed
+    task_service = get_task_service()
+    scheduling_service = get_scheduling_service()
+
     if args.list:
-        _print_json(scheduler.list_scheduled_tasks())
+        _print_json(scheduling_service.list_tasks())
         return 0
 
     if args.validate:
@@ -80,12 +85,27 @@ def handle_schedule_command(args, scheduler: TaskScheduler):  # noqa: D401
         return 0 if ok else 1
 
     if args.all:
-        result = scheduler.schedule_all_tasks()
+        # Schedule all enabled tasks via ConfigManager data
+        result: dict[str, bool] = {}
+        for name in task_service.list_tasks().keys():
+            try:
+                task = task_service.get_task(name)
+                ok = scheduling_service.schedule_task(name, task["command"], task["schedule"])
+            except Exception:
+                ok = False
+            result[name] = ok
         _print_json(result)
         return 0
 
     if args.task:
-        ok = scheduler.schedule_task(args.task)
+        task = task_service.get_task(args.task)
+        if task is None:
+            print("Task not found", file=sys.stderr)
+            return 1
+        try:
+            ok = scheduling_service.schedule_task(args.task, task["command"], task["schedule"])
+        except Exception:
+            ok = False
         print("Scheduled" if ok else "Failed")
         return 0 if ok else 1
 
@@ -93,13 +113,14 @@ def handle_schedule_command(args, scheduler: TaskScheduler):  # noqa: D401
     return 1
 
 
-def handle_unschedule_command(args, scheduler: TaskScheduler):  # noqa: D401
-    ok = scheduler.unschedule_task(args.task)
+def handle_unschedule_command(args, scheduler: TaskScheduler) -> int:  # noqa: D401
+    scheduling_service = get_scheduling_service()
+    ok = scheduling_service.unschedule_task(args.task)
     print("Unscheduled" if ok else "Failed")
     return 0 if ok else 1
 
 
-def handle_execute_command(args, scheduler: TaskScheduler):  # noqa: D401
+def handle_execute_command(args, scheduler: TaskScheduler) -> int:  # noqa: D401
     if args.check_deps:
         ok, msg = scheduler.check_dependencies(args.task)
         print("OK" if ok else f"Failed: {msg}")
@@ -110,17 +131,17 @@ def handle_execute_command(args, scheduler: TaskScheduler):  # noqa: D401
     return 0 if result.status == "SUCCESS" else 1
 
 
-def handle_dashboard_command(_args):  # noqa: D401
+def handle_dashboard_command(_args) -> int:  # noqa: D401
     dashboard_main()
     return 0
 
 
-def handle_configure_command(_args):  # noqa: D401
+def handle_configure_command(_args) -> int:  # noqa: D401
     configure_main()
     return 0
 
 
-def handle_migrate_command(args):  # noqa: D401
+def handle_migrate_command(args) -> int:  # noqa: D401
     from tools.migration import migrate_from_legacy, cleanup_legacy  # lazy import
 
     if args.from_legacy:

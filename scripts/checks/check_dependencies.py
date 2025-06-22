@@ -5,7 +5,7 @@ This script is meant to be invoked by Windows Task Scheduler *before* a task
 runs, ensuring that all declared dependencies for the given task are present.
 It supports three dependency flavours:
 
-1. **file:** `file:C:\path\to\resource` – path must exist.
+1. **file:** `file:C:\\path\\to\\resource` – path must exist.
 2. **command:** `command:python --version` – command must return exit-code 0.
 3. **url:** `url:https://example.com/health` – HTTP 2xx considered success.
 

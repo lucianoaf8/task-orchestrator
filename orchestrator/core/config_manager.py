@@ -21,7 +21,7 @@ class ConfigManager:
         """Create a new `ConfigManager`.
 
         When the orchestrator is executed by Windows Task Scheduler the
-        current working directory defaults to *C:\Windows\System32*.
+        current working directory defaults to *C:\\Windows\\System32*.
         Any *relative* database path would therefore point to the wrong
         location and a fresh, empty SQLite file would be created there.
         That in turn makes `orc.py --task <name>` fail because it cannot
@@ -332,3 +332,32 @@ class ConfigManager:
             columns = [desc[0] for desc in cursor.description]
             results.append(dict(zip(columns, row)))
         return results
+
+
+    # ------------------------------------------------------------------
+    # Resource management
+    # ------------------------------------------------------------------
+    def close(self) -> None:
+        """Close the underlying SQLite connection."""
+        try:
+            self.db.close()
+        except Exception:
+            # Ignore errors during shutdown
+            pass
+
+    def __enter__(self) -> "ConfigManager":
+        """Enable usage like `with ConfigManager(...) as cm.`"""
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):  # noqa: D401
+        """Ensure the database connection is closed on context exit."""
+        self.close()
+
+    def __del__(self) -> None:
+        """Best-effort close when the instance is garbage-collected."""
+        db = getattr(self, "db", None)
+        if db:
+            try:
+                db.close()
+            except Exception:
+                pass

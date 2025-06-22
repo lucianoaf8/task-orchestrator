@@ -2,7 +2,7 @@
 Writes a timestamp and optional marker line to the specified output file.
 
 This replaces brittle inline ``python -c`` one-liners previously embedded in
-schtasks \TR strings.
+schtasks \\TR strings.
 """
 
 from __future__ import annotations

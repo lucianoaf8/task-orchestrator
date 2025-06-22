@@ -20,7 +20,7 @@ import sys
 from datetime import datetime, timezone
 from email.mime.text import MIMEText
 from pathlib import Path
-from smtplib import SMTP
+import smtplib
 from typing import Any, Dict
 
 import requests
@@ -99,7 +99,7 @@ def send_email(cm: ConfigManager, body: str) -> None:
     msg["From"] = sender_email
     msg["To"] = ", ".join(recipients)
 
-    with SMTP(smtp_server, smtp_port) as server:
+    with smtplib.SMTP(smtp_server, smtp_port) as server:
         server.starttls()
         server.login(sender_email, password)
         server.send_message(msg)

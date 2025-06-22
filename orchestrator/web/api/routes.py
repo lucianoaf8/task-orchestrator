@@ -1,14 +1,17 @@
-﻿import subprocess
+import subprocess
 import sys
 import os
+import json
 from pathlib import Path
 from flask import Blueprint, request, jsonify
 from orchestrator.core.config_manager import ConfigManager
 from orchestrator.utils.cron_converter import CronConverter
+from orchestrator.services import get_scheduling_service
 
 # Create API blueprint and utility helpers
 api_bp = Blueprint("api", __name__, url_prefix="/api")
 CM = ConfigManager()
+SCHEDULER = get_scheduling_service()
 
 
 def _json(payload: dict, status: int = 200):
@@ -29,29 +32,22 @@ def _validate_cron(cron_expr: str):
 
 
 # Add this helper function at the top of the file
-def call_orc_py(operation: str, task_name: str = None) -> tuple[bool, str]:
-    """
-    Call orc.py subprocess and return (success, message)
-    This aligns with the documented flow where web API triggers orc.py
-    """
+def call_orc_py(operation: str, task_name: str | None = None) -> tuple[bool, str]:
+    """Thin wrapper delegating to :data:`SCHEDULER` for tests."""
     try:
-        project_root = Path(__file__).resolve().parent.parent.parent
-        orc_py = project_root / "orc.py"`n        cmd = [sys.executable, str(orc_py)]
-        
-        if operation == 'schedule' and task_name:
-            cmd.extend(['--schedule', task_name])
-        elif operation == 'unschedule' and task_name:
-            cmd.extend(['--unschedule', task_name])
-        elif operation == 'list':
-            cmd.append('--list')
-        else:
-            return False, f"Invalid operation: {operation}"
-        
-        result = subprocess.run(cmd, capture_output=True, text=True, cwd=project_root)
-        
-        return result.returncode == 0, result.stdout if result.returncode == 0 else result.stderr
-        
-    except Exception as e:
+        if operation == "schedule" and task_name:
+            t = CM.get_task(task_name)
+            if not t:
+                return False, "Task not found"
+            SCHEDULER.schedule_task(task_name, t.get("command", ""), t.get("schedule", ""))
+            return True, "scheduled"
+        if operation == "unschedule" and task_name:
+            SCHEDULER.unschedule_task(task_name)
+            return True, "unscheduled"
+        if operation == "list":
+            return True, json.dumps(SCHEDULER.list_tasks())
+        return False, f"Invalid operation: {operation}"
+    except Exception as e:  # pragma: no cover - defensive
         return False, str(e)
 
 # Update the existing add_or_update_task function
@@ -110,17 +106,36 @@ def list_scheduled():
     """List scheduled tasks via orc.py"""
     success, output = call_orc_py('list')
     if success:
-        # Parse orc.py output into structured data
-        lines = output.strip().split('\n')
-        tasks = []
-        for line in lines:
-            if ':' in line and not line.startswith('Scheduled Tasks:') and not line.startswith('-'):
-                parts = line.strip().split(':')
-                if len(parts) >= 2:
-                    task_name = parts[0].strip()
-                    status = parts[1].strip()
-                    tasks.append({"TaskName": task_name, "Status": status})
-        
+        try:
+            tasks = json.loads(output)
+        except Exception:
+            lines = output.strip().split('\n')
+            tasks = []
+            for line in lines:
+                if ':' in line and not line.startswith('Scheduled Tasks:') and not line.startswith('-'):
+                    parts = line.strip().split(':')
+                    if len(parts) >= 2:
+                        task_name = parts[0].strip()
+                        status = parts[1].strip()
+                        tasks.append({"TaskName": task_name, "Status": status})
+
         return _success({"scheduled_tasks": tasks})
     else:
         return _json({"error": f"Failed to list tasks: {output}"}, 500)
+
+
+@api_bp.get("/health")
+def health() -> tuple:
+    """Simple health check endpoint."""
+    return _success({"status": "healthy"})
+
+
+@api_bp.get("/system/scheduler-status")
+def scheduler_status():
+    """Return counts of configured and scheduled tasks."""
+    try:
+        configured = len(CM.get_all_tasks())
+        scheduled = len(SCHEDULER.list_tasks())
+        return _success({"configured": configured, "scheduled": scheduled})
+    except Exception as exc:  # pragma: no cover - defensive
+        return _json({"error": str(exc)}, 500)

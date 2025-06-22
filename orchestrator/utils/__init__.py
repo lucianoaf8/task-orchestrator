@@ -12,7 +12,7 @@ from importlib import import_module as _import_module
 # Lazy import to avoid unnecessary overhead if configure is unused
 try:
     configure = _import_module(__name__ + ".configure")  # noqa: N812
-except ModuleNotFoundError:  # pragma: no cover – theoretical
+except Exception:  # pragma: no cover - avoid circular import issues
     configure = None  # type: ignore
 
 from .windows_scheduler import WindowsScheduler  # noqa: F401  (re-export)

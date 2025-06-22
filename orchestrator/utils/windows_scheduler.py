@@ -60,7 +60,7 @@ class WindowsScheduler:
         # Build command string for /TR – avoid extra escaping quotes
         orc_py = project_root / "orc.py"
         # Paths do not contain spaces, so quoting only the script path keeps things simple
-        orc_command = f\
+        orc_command = f"{python_exe} {orc_py} --task {task_name}"
         
         # Build schtasks command
         cmd = CREATE_CMD_BASE + [
@@ -163,9 +163,34 @@ class WindowsScheduler:
         """Delete the task if it exists"""
         full_task_name = f"{self.TASK_PATH}\\{self.TASK_PREFIX}{task_name}"
         cmd = DELETE_CMD_BASE + ["/TN", full_task_name]
-        
+
         self.logger.info(f"Deleting task: {full_task_name}")
         return self._run(cmd)
+
+    def enable_task(self, task_name: str) -> bool:
+        """Enable a disabled task."""
+        full_task_name = f"{self.TASK_PATH}\\{self.TASK_PREFIX}{task_name}"
+        cmd = ["schtasks", "/Change", "/TN", full_task_name, "/ENABLE"]
+        return self._run(cmd)
+
+    def disable_task(self, task_name: str) -> bool:
+        """Disable an existing task."""
+        full_task_name = f"{self.TASK_PATH}\\{self.TASK_PREFIX}{task_name}"
+        cmd = ["schtasks", "/Change", "/TN", full_task_name, "/DISABLE"]
+        return self._run(cmd)
+
+    def get_task_status(self, task_name: str) -> Optional[Dict[str, str]]:
+        """Return task status information if available."""
+        full_task_name = f"{self.TASK_PATH}\\{self.TASK_PREFIX}{task_name}"
+        cmd = QUERY_CMD_BASE + ["/TN", full_task_name, "/FO", "JSON"]
+        success, stdout = self._run(cmd, capture_output=True)
+        if not success or not stdout:
+            return None
+        try:
+            data = json.loads(stdout)
+            return data[0] if isinstance(data, list) else data
+        except Exception:
+            return None
 
     def task_exists(self, task_name: str) -> bool:
         """Check if specific task exists"""
@@ -189,30 +214,37 @@ class WindowsScheduler:
         if not success or not stdout:
             self.logger.debug("schtasks /Query failed – returning empty list")
             return []
-        
-        # schtasks LIST output is plain text – parse it into a list of task dicts.
+
         tasks: List[dict] = []
-        current: dict[str, str] = {}
-        for raw_line in stdout.splitlines():
-            line = raw_line.strip()
-            if not line:
-                continue
-            if line.startswith("HostName:") and current:
-                # Separator between task blocks – store previous and reset
+        try:
+            # Some patched versions may return JSON for easier testing
+            parsed = json.loads(stdout)
+            if isinstance(parsed, list):
+                tasks = parsed
+        except Exception:  # fall back to plain text parsing
+            current: dict[str, str] = {}
+            for raw_line in stdout.splitlines():
+                line = raw_line.strip()
+                if not line:
+                    continue
+                if line.startswith("HostName:") and current:
+                    tasks.append(current)
+                    current = {}
+                if ":" in line:
+                    key, val = line.split(":", 1)
+                    current[key.strip()] = val.strip()
+            if current:
                 tasks.append(current)
-                current = {}
-            if ":" in line:
-                key, val = line.split(":", 1)
-                current[key.strip()] = val.strip()
-        if current:
-            tasks.append(current)
         
-        task_prefix = f"{self.TASK_PATH}\\{self.TASK_PREFIX}"
-        orchestrator_tasks = [
-            {**t, "ShortName": t.get("TaskName", "")[len(task_prefix):]}
-            for t in tasks
-            if t.get("TaskName", "").startswith(task_prefix)
-        ]
+        def _norm(path: str) -> str:
+            return path.lstrip("\\").replace("\\\\", "\\")
+
+        task_prefix = _norm(f"{self.TASK_PATH}\\{self.TASK_PREFIX}")
+        orchestrator_tasks = []
+        for t in tasks:
+            name = _norm(t.get("TaskName", ""))
+            if name.startswith(task_prefix):
+                orchestrator_tasks.append({**t, "ShortName": name[len(task_prefix):]})
         self.logger.debug("Found %d orchestrator tasks", len(orchestrator_tasks))
         return orchestrator_tasks
             

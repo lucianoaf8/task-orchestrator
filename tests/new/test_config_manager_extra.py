@@ -37,3 +37,14 @@ def test_get_tasks_paginated(tmp_path):
         cm.add_task(f't{i}', 'shell', 'cmd', schedule=None)
     tasks = cm.get_tasks_paginated(limit=2, offset=1, enabled_only=False, fields=['name'])
     assert len(tasks) == 2 and 'name' in tasks[0]
+
+def test_init_db_handles_corruption(tmp_path, capsys):
+    db_file = tmp_path / 'db.sqlite'
+    db_file.write_text('not a database')
+    cm = ConfigManager(db_path=str(db_file))
+    backups = list(tmp_path.glob('db.sqlite.corrupt-*'))
+    assert len(backups) == 1
+    assert db_file.exists()
+    out = capsys.readouterr().out
+    assert 'corrupted database file' in out
+    cm.close()

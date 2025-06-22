@@ -44,3 +44,36 @@ def test_list_tasks_parses_json(m_run, ws):  # noqa: D401
 
     tasks = ws.list_orchestrator_tasks()
     assert len(tasks) == 1 and tasks[0]["TaskName"].endswith("test1")
+
+
+def test_run_simulate_list(monkeypatch):
+    monkeypatch.setenv('ORC_SIMULATE_SCHEDULER', '1')
+    ws = WindowsScheduler()
+    success, out = ws._run(['schtasks', '/Query'], capture_output=True)
+    assert success and 'simulated_task' in out
+
+
+@mock.patch('subprocess.run')
+def test_run_success_capture(m_run, monkeypatch):
+    monkeypatch.delenv('ORC_SIMULATE_SCHEDULER', raising=False)
+    m_run.return_value = mock.Mock(returncode=0, stdout='ok', stderr='')
+    ws = WindowsScheduler()
+    success, out = ws._run(['schtasks', '/Query', '/TN', 'foo'], capture_output=True)
+    assert success and out == 'ok'
+
+
+@mock.patch('subprocess.run')
+def test_run_failure_capture(m_run, monkeypatch):
+    monkeypatch.delenv('ORC_SIMULATE_SCHEDULER', raising=False)
+    m_run.return_value = mock.Mock(returncode=1, stdout='out', stderr='err')
+    ws = WindowsScheduler()
+    success, out = ws._run(['schtasks', '/Delete'], capture_output=True)
+    assert success is False and out == 'err'
+
+
+@mock.patch('subprocess.run', side_effect=FileNotFoundError)
+def test_run_file_not_found(_run, monkeypatch):
+    monkeypatch.delenv('ORC_SIMULATE_SCHEDULER', raising=False)
+    ws = WindowsScheduler()
+    result = ws._run(['schtasks'])
+    assert result is False

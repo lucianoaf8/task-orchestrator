@@ -40,3 +40,29 @@ def test_fetch_build_send(monkeypatch):
 
     monkeypatch.setattr(dem.smtplib,'SMTP', DummySMTP)
     dem.send_email(cm,'body')
+
+import pytest
+
+
+def test_fetch_salesforce_data_success(monkeypatch):
+    cm = DummyCM()
+    resp = mock.Mock(status_code=200, json=lambda: {'ok': True})
+    monkeypatch.setattr(dem.requests, 'get', lambda *a, **k: resp)
+    data = dem.fetch_salesforce_data(cm)
+    assert data == {'ok': True}
+
+
+def test_fetch_salesforce_data_missing(monkeypatch):
+    cm = DummyCM()
+    cm.cfg['salesforce']['instance_url'] = None
+    with pytest.raises(RuntimeError):
+        dem.fetch_salesforce_data(cm)
+
+
+def test_fetch_salesforce_data_error(monkeypatch):
+    cm = DummyCM()
+    def raise_err(*a, **k):
+        raise dem.RequestException('bad')
+    monkeypatch.setattr(dem.requests, 'get', raise_err)
+    with pytest.raises(RuntimeError):
+        dem.fetch_salesforce_data(cm)

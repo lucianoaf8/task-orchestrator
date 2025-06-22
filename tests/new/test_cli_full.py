@@ -1,3 +1,4 @@
+import json
 import sys
 import pytest
 from types import SimpleNamespace
@@ -103,3 +104,53 @@ def test_cli_main_no_command(monkeypatch):
     with pytest.raises(SystemExit) as exc:
         cli.cli_main()
     assert exc.value.code == 1
+
+class ScheduleDummyScheduler:
+    def validate_task_config(self, name):
+        return (name == 'good'), 'error' if name != 'good' else 'OK'
+
+
+def test_handle_schedule_validate(monkeypatch, capsys):
+    ts = DummyTaskService()
+    ss = DummyServices()
+    monkeypatch.setattr(cli, 'get_task_service', lambda: ts)
+    monkeypatch.setattr(cli, 'get_scheduling_service', lambda: ss)
+    sch = ScheduleDummyScheduler()
+    code = cli.handle_schedule_command(make_args(validate='bad'), sch)
+    assert code == 1
+    assert 'Invalid' in capsys.readouterr().out
+
+
+def test_handle_schedule_all(monkeypatch, capsys):
+    ts = DummyTaskService()
+    ts.tasks['bar'] = {'command': 'c', 'schedule': '*'}
+    class Svc(DummyServices):
+        def schedule_task(self, name, cmd, cron):
+            if name == 'bar':
+                raise Exception('fail')
+            return True
+    svc = Svc()
+    monkeypatch.setattr(cli, 'get_task_service', lambda: ts)
+    monkeypatch.setattr(cli, 'get_scheduling_service', lambda: svc)
+    code = cli.handle_schedule_command(make_args(all=True), ScheduleDummyScheduler())
+    out = capsys.readouterr().out
+    assert code == 0
+    data = json.loads(out)
+    assert data['foo'] is True and data['bar'] is False
+
+
+def test_handle_schedule_task_not_found(monkeypatch, capsys):
+    ts = DummyTaskService()
+    monkeypatch.setattr(cli, 'get_task_service', lambda: ts)
+    monkeypatch.setattr(cli, 'get_scheduling_service', lambda: DummyServices())
+    code = cli.handle_schedule_command(make_args(task='missing'), ScheduleDummyScheduler())
+    err = capsys.readouterr().err
+    assert code == 1 and 'Task not found' in err
+
+
+def test_handle_schedule_no_action(monkeypatch, capsys):
+    monkeypatch.setattr(cli, 'get_task_service', lambda: DummyTaskService())
+    monkeypatch.setattr(cli, 'get_scheduling_service', lambda: DummyServices())
+    code = cli.handle_schedule_command(make_args(), ScheduleDummyScheduler())
+    err = capsys.readouterr().err
+    assert code == 1 and 'No action' in err

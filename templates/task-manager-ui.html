@@ -64,7 +64,7 @@
         }
 
         .container {
-            max-width: 1400px;
+            max-width: 1200px;
             margin: 0 auto;
             padding: 20px;
         }
@@ -119,6 +119,7 @@
             gap: 8px;
             transition: background-color 0.2s ease;
             position: relative;
+            overflow: hidden;
         }
 
         .btn-primary {
@@ -141,22 +142,11 @@
             border: 1px solid var(--border-color);
         }
 
-        .btn-danger {
-            background: var(--danger-color);
-            color: var(--white);
-        }
-
         .btn-sm {
             padding: 6px 12px;
             font-size: 12px;
         }
 
-        .btn:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-        }
-
-        /* Theme Toggle */
         .theme-toggle {
             background: var(--light-color);
             border: 1px solid var(--border-color);
@@ -166,17 +156,43 @@
             display: flex;
             align-items: center;
             gap: 8px;
-            transition: background-color 0.3s ease;
+            font-size: 0.875rem;
             color: var(--text-color);
             font-weight: 500;
-            font-size: 14px;
+            transition: background-color 0.3s ease;
         }
 
-        .theme-icon {
-            font-size: 1.2rem;
+        .theme-toggle:hover {
+            background: var(--border-color);
         }
 
-        /* Main Content Layout */
+        /* Messages */
+        .message {
+            padding: 16px 20px;
+            border-radius: var(--border-radius-sm);
+            margin-bottom: 20px;
+            font-weight: 500;
+        }
+
+        .message.success {
+            background: var(--success-bg);
+            color: var(--success-color);
+            border: 1px solid var(--success-color);
+        }
+
+        .message.error {
+            background: var(--danger-bg);
+            color: var(--danger-color);
+            border: 1px solid var(--danger-color);
+        }
+
+        .message.warning {
+            background: var(--warning-bg);
+            color: var(--warning-color);
+            border: 1px solid var(--warning-color);
+        }
+
+        /* Main Content */
         .main-content {
             display: grid;
             grid-template-columns: 1fr 350px;
@@ -193,8 +209,8 @@
         .form-section {
             background: var(--white);
             border-radius: var(--border-radius);
-            box-shadow: var(--shadow);
             overflow: hidden;
+            box-shadow: var(--shadow);
             transition: background-color 0.3s ease;
         }
 
@@ -215,12 +231,11 @@
         }
 
         .form-content {
-            padding: 32px;
+            padding: 24px;
         }
 
-        /* Form Styles */
         .form-group {
-            margin-bottom: 24px;
+            margin-bottom: 20px;
         }
 
         .form-label {
@@ -228,6 +243,7 @@
             margin-bottom: 8px;
             font-weight: 600;
             color: var(--text-color);
+            font-size: 0.875rem;
         }
 
         .form-control {
@@ -237,7 +253,7 @@
             border-radius: var(--border-radius-sm);
             background: var(--white);
             color: var(--text-color);
-            font-size: 14px;
+            font-size: 0.875rem;
             transition: border-color 0.2s ease, background-color 0.3s ease;
         }
 
@@ -254,235 +270,78 @@
         }
 
         .form-text {
-            font-size: 12px;
+            font-size: 0.75rem;
             color: var(--text-muted);
-            margin-top: 6px;
+            margin-top: 4px;
         }
 
         .form-row {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 20px;
+            gap: 16px;
         }
 
-        @media (max-width: 768px) {
-            .form-row {
-                grid-template-columns: 1fr;
-            }
+        textarea.form-control {
+            min-height: 100px;
+            resize: vertical;
         }
 
-        /* Dependency Management */
-        .dependency-container {
-            background: var(--light-color);
-            border: 2px solid var(--border-color);
-            border-radius: var(--border-radius-sm);
-            padding: 16px;
-            min-height: 80px;
-            transition: background-color 0.3s ease, border-color 0.3s ease;
-        }
-
-        .dependency-tag {
-            display: inline-flex;
-            align-items: center;
-            background: var(--primary-color);
-            color: var(--white);
-            padding: 4px 12px;
-            margin: 4px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 500;
-            gap: 8px;
-        }
-
-        .dependency-remove {
-            cursor: pointer;
-            font-weight: bold;
-            opacity: 0.8;
-            transition: opacity 0.2s ease;
-        }
-
-        .dependency-remove:hover {
-            opacity: 1;
-        }
-
-        /* Help Box */
-        .help-box {
-            background: var(--light-color);
-            border: 2px solid var(--border-color);
-            border-radius: var(--border-radius-sm);
-            padding: 16px;
-            margin-top: 8px;
-            border-left: 4px solid var(--primary-color);
-            transition: background-color 0.3s ease, border-color 0.3s ease;
-        }
-
-        .help-box h4 {
-            margin-bottom: 8px;
-            color: var(--text-color);
-        }
-
-        .help-box code {
-            background: var(--white);
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
-            color: var(--primary-color);
-            font-size: 11px;
-        }
-
-        /* Sidebar */
-        .sidebar {
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-        }
-
-        .sidebar-card {
-            background: var(--white);
-            border-radius: var(--border-radius);
-            padding: 24px;
-            box-shadow: var(--shadow);
-            transition: background-color 0.3s ease;
-        }
-
-        .sidebar-card h3 {
-            margin-bottom: 16px;
-            color: var(--dark-color);
-            font-size: 1.2rem;
-            font-weight: 600;
-        }
-
-        /* Tasks Table */
-        .table-container {
-            overflow-x: auto;
-        }
-
-        .table {
-            width: 100%;
-            border-collapse: collapse;
+        /* Tasks List */
+        .tasks-list {
             background: var(--white);
             border-radius: var(--border-radius);
             overflow: hidden;
             box-shadow: var(--shadow);
+            transition: background-color 0.3s ease;
         }
 
-        .table th,
-        .table td {
+        .task-item {
             padding: 16px 20px;
-            text-align: left;
             border-bottom: 1px solid var(--border-color);
-        }
-
-        .table th {
-            background: var(--light-color);
-            font-weight: 600;
-            color: var(--text-color);
-            transition: background-color 0.3s ease, color 0.3s ease;
-        }
-
-        .table tbody tr {
+            cursor: pointer;
             transition: background-color 0.2s ease;
+        }
+
+        .task-item:hover {
+            background: var(--light-color);
+        }
+
+        .task-item:last-child {
+            border-bottom: none;
         }
 
         .task-name {
             font-weight: 600;
-            color: var(--dark-color);
+            color: var(--text-color);
+            margin-bottom: 4px;
         }
 
-        .task-type {
-            font-size: 0.85rem;
+        .task-details {
+            font-size: 0.875rem;
             color: var(--text-muted);
         }
 
-        /* Status Badges */
-        .badge {
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 12px;
+        .task-status {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.75rem;
             font-weight: 600;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
-            transition: background-color 0.3s ease, color 0.3s ease;
+            margin-left: 8px;
         }
 
-        .badge-enabled {
+        .task-status.enabled {
             background: var(--success-bg);
             color: var(--success-color);
         }
 
-        .badge-disabled {
+        .task-status.disabled {
             background: var(--light-color);
             color: var(--text-muted);
         }
 
-        /* Action Buttons */
-        .action-group {
-            display: flex;
-            gap: 8px;
-        }
-
-        .action-btn {
-            padding: 6px 12px;
-            font-size: 12px;
-            border-radius: 4px;
-            border: 1px solid var(--border-color);
-            background: var(--white);
-            color: var(--text-color);
-            cursor: pointer;
-            transition: background-color 0.2s ease, color 0.2s ease;
-        }
-
-        .action-btn:hover {
-            background: var(--light-color);
-        }
-
-        /* Messages */
-        .message {
-            padding: 16px 20px;
-            border-radius: var(--border-radius-sm);
-            margin-bottom: 24px;
-            font-weight: 500;
-            transition: all 0.3s ease;
-            border-left: 4px solid;
-        }
-
-        .message.success {
-            background: var(--success-bg);
-            color: var(--success-color);
-            border-color: var(--success-color);
-        }
-
-        .message.error {
-            background: var(--danger-bg);
-            color: var(--danger-color);
-            border-color: var(--danger-color);
-        }
-
-        /* Loading States */
-        .loading {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 40px;
-            color: var(--text-muted);
-        }
-
-        .spinner {
-            width: 24px;
-            height: 24px;
-            border: 3px solid var(--light-color);
-            border-top: 3px solid var(--primary-color);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin-right: 12px;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        /* Empty State */
+        /* Empty state */
         .empty-state {
             text-align: center;
             padding: 60px 20px;
@@ -502,6 +361,39 @@
 
         .empty-state p {
             margin-bottom: 20px;
+        }
+
+        /* Dependencies */
+        .dependency-container {
+            background: var(--light-color);
+            border: 2px dashed var(--border-color);
+            border-radius: var(--border-radius-sm);
+            padding: 12px;
+            min-height: 60px;
+            transition: background-color 0.3s ease, border-color 0.3s ease;
+        }
+
+        .dependency-tag {
+            display: inline-flex;
+            align-items: center;
+            background: var(--primary-color);
+            color: white;
+            padding: 4px 12px;
+            margin: 4px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            gap: 6px;
+        }
+
+        .dependency-remove {
+            cursor: pointer;
+            opacity: 0.8;
+            font-weight: bold;
+        }
+
+        .dependency-remove:hover {
+            opacity: 1;
         }
 
         /* Responsive Design */
@@ -528,6 +420,10 @@
                 padding: 16px 20px;
                 flex-direction: column;
                 align-items: stretch;
+            }
+
+            .form-row {
+                grid-template-columns: 1fr;
             }
         }
 
@@ -580,30 +476,26 @@
                         <button class="btn btn-secondary btn-sm" onclick="testCommand()">Test Command</button>
                     </div>
                 </div>
-                
                 <div class="form-content">
-                    <form id="taskForm">
-                        <input type="hidden" id="editMode" value="false">
-                        <input type="hidden" id="originalTaskName" value="">
-                        
+                    <form id="task-form">
+                        <!-- Basic Information -->
                         <div class="form-group">
-                            <label for="taskName" class="form-label">Task Name *</label>
-                            <input type="text" id="taskName" class="form-control" required placeholder="e.g., fetch_customer_data">
-                            <div class="form-text">Unique identifier for this task (no spaces, use underscores)</div>
+                            <label for="task-name" class="form-label">Task Name *</label>
+                            <input type="text" id="task-name" class="form-control" required>
+                            <div class="form-text">Unique identifier for the task (lowercase, no spaces)</div>
                         </div>
 
                         <div class="form-row">
                             <div class="form-group">
-                                <label for="taskType" class="form-label">Task Type *</label>
-                                <select id="taskType" class="form-control" required>
+                                <label for="task-type" class="form-label">Task Type *</label>
+                                <select id="task-type" class="form-control" required>
                                     <option value="">Select type...</option>
                                     <option value="data_job">Data Job</option>
-                                    <option value="condition">Condition Check</option>
-                                    <option value="report">Report Generation</option>
-                                    <option value="maintenance">Maintenance</option>
+                                    <option value="shell">Shell Script</option>
+                                    <option value="python">Python Script</option>
+                                    <option value="other">Other</option>
                                 </select>
                             </div>
-
                             <div class="form-group">
                                 <label for="enabled" class="form-label">Status</label>
                                 <select id="enabled" class="form-control">
@@ -613,101 +505,69 @@
                             </div>
                         </div>
 
+                        <!-- Command -->
                         <div class="form-group">
                             <label for="command" class="form-label">Command *</label>
-                            <input type="text" id="command" class="form-control" required placeholder="python scripts/your_script.py">
-                            <div class="form-text">Full command to execute (include python and script path)</div>
+                            <textarea id="command" class="form-control" required placeholder="python script.py --arg value"></textarea>
+                            <div class="form-text">Full command to execute (include all arguments)</div>
                         </div>
 
+                        <!-- Schedule -->
                         <div class="form-group">
-                            <label for="schedule" class="form-label">Schedule (Cron Format)</label>
+                            <label for="schedule" class="form-label">Schedule (Cron Expression)</label>
                             <input type="text" id="schedule" class="form-control" placeholder="0 6 * * *">
-                            <div class="form-text">Leave empty for manual execution only</div>
-                            <div class="help-box">
-                                <h4>Common Examples:</h4>
-                                <code>0 6 * * *</code> - Daily at 6:00 AM<br>
-                                <code>0 8 * * 1</code> - Weekly on Monday at 8:00 AM<br>
-                                <code>0 9 1 * *</code> - Monthly on 1st day at 9:00 AM<br>
-                                <code>*/30 * * * *</code> - Every 30 minutes
-                            </div>
+                            <div class="form-text">Leave empty for manual execution only. Examples: "0 6 * * *" (daily at 6 AM), "*/30 * * * *" (every 30 minutes)</div>
                         </div>
 
+                        <!-- Advanced Settings -->
                         <div class="form-row">
                             <div class="form-group">
                                 <label for="timeout" class="form-label">Timeout (seconds)</label>
-                                <input type="number" id="timeout" class="form-control" value="3600" min="30" max="86400">
-                                <div class="form-text">Maximum execution time (default: 1 hour)</div>
+                                <input type="number" id="timeout" class="form-control" value="3600" min="1">
                             </div>
-
                             <div class="form-group">
-                                <label for="retryCount" class="form-label">Retry Count</label>
-                                <input type="number" id="retryCount" class="form-control" value="0" min="0" max="10">
-                                <div class="form-text">Number of retries on failure</div>
+                                <label for="retry-count" class="form-label">Retry Count</label>
+                                <input type="number" id="retry-count" class="form-control" value="0" min="0" max="5">
                             </div>
                         </div>
 
                         <div class="form-group">
-                            <label for="retryDelay" class="form-label">Retry Delay (seconds)</label>
-                            <input type="number" id="retryDelay" class="form-control" value="300" min="60" max="3600">
-                            <div class="form-text">Wait time between retries (default: 5 minutes)</div>
+                            <label for="retry-delay" class="form-label">Retry Delay (seconds)</label>
+                            <input type="number" id="retry-delay" class="form-control" value="300" min="1">
                         </div>
 
+                        <!-- Dependencies -->
                         <div class="form-group">
-                            <label for="dependencies" class="form-label">Dependencies</label>
-                            <select id="dependencySelect" class="form-control" onchange="addDependency()">
-                                <option value="">Select dependency...</option>
-                            </select>
-                            <div id="dependencyList" class="dependency-container">
-                                <div class="form-text">Tasks that must succeed before this task runs</div>
+                            <label class="form-label">Dependencies</label>
+                            <div class="dependency-container" id="dependencies-container">
+                                <div class="form-text">Dependencies will appear here. Add them using the input below.</div>
+                            </div>
+                            <div style="margin-top: 8px;">
+                                <input type="text" id="dependency-input" class="form-control" placeholder="task_name, file:/path/to/file, url:https://example.com, command:ping server">
+                                <div class="form-text">Press Enter to add dependency</div>
                             </div>
                         </div>
 
-                        <div class="form-group" style="margin-top: 32px; padding-top: 24px; border-top: 1px solid var(--border-color);">
-                            <button type="submit" class="btn btn-primary">
-                                <span id="submitText">Add Task</span>
-                            </button>
+                        <!-- Form Actions -->
+                        <div style="margin-top: 24px; text-align: center;">
+                            <button type="button" class="btn btn-secondary" onclick="resetForm()">Reset</button>
+                            <button type="submit" class="btn btn-primary" style="margin-left: 12px;">Save Task</button>
                         </div>
                     </form>
                 </div>
             </div>
 
-            <!-- Sidebar -->
-            <div class="sidebar">
-                <!-- Existing Tasks -->
-                <div class="sidebar-card">
-                    <h3>Existing Tasks</h3>
-                    <div id="tasksList">
-                        <div class="loading">
-                            <div class="spinner"></div>
-                            Loading tasks...
-                        </div>
+            <!-- Tasks List -->
+            <div class="tasks-list">
+                <div class="section-header">
+                    <h2>Existing Tasks</h2>
+                    <div class="header-actions">
+                        <button class="btn btn-secondary btn-sm" onclick="refreshTasksList()">Refresh</button>
                     </div>
                 </div>
-
-                <!-- Quick Actions -->
-                <div class="sidebar-card">
-                    <h3>Quick Actions</h3>
-                    <div style="display: flex; flex-direction: column; gap: 8px;">
-                        <button class="btn btn-secondary btn-sm" onclick="loadTasks()">
-                            🔄 Refresh Tasks
-                        </button>
-                        <button class="btn btn-secondary btn-sm" onclick="exportTasks()">
-                            📁 Export Config
-                        </button>
-                        <button class="btn btn-secondary btn-sm" onclick="importTasks()">
-                            📂 Import Config
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Help -->
-                <div class="sidebar-card">
-                    <h3>Keyboard Shortcuts</h3>
-                    <div style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.8;">
-                        <strong>Ctrl+S</strong> - Save form<br>
-                        <strong>Ctrl+R</strong> - Reset form<br>
-                        <strong>Ctrl+T</strong> - Test command<br>
-                        <strong>Ctrl+D</strong> - Toggle theme
+                <div id="tasks-list-content">
+                    <div class="loading" style="text-align: center; padding: 40px; color: var(--text-muted);">
+                        Loading tasks...
                     </div>
                 </div>
             </div>
@@ -716,8 +576,9 @@
 
     <script>
         // Global state
-        let currentDependencies = [];
-        let existingTasks = [];
+        let currentTasks = {};
+        let editingTask = null;
+        let dependencies = [];
 
         // Theme management
         function initTheme() {
@@ -727,8 +588,8 @@
         }
 
         function toggleTheme() {
-            const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
-            const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+            const currentTheme = document.documentElement.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
             
             document.documentElement.setAttribute('data-theme', newTheme);
             localStorage.setItem('theme', newTheme);
@@ -748,300 +609,286 @@
             }
         }
 
-        // Load existing tasks
-        async function loadTasks() {
-            try {
-                const response = await fetch('/api/v2/tasks');
-                const data = await response.json();
-                
-                if (data.status === 'success') {
-                    existingTasks = Object.entries(data.tasks);
-                    displayExistingTasks(existingTasks);
-                    updateDependencyOptions();
-                } else {
-                    showMessage('Error loading tasks: ' + data.error, 'error');
-                }
-            } catch (error) {
-                showMessage('Error connecting to server: ' + error.message, 'error');
+        // Message display
+        function showMessage(text, type = 'info') {
+            const messageDiv = document.getElementById('message');
+            messageDiv.textContent = text;
+            messageDiv.className = `message ${type}`;
+            messageDiv.style.display = 'block';
+            
+            // Auto-hide after 5 seconds
+            setTimeout(() => {
+                messageDiv.style.display = 'none';
+            }, 5000);
+        }
+
+        // Dependencies management
+        function addDependency(dep) {
+            if (dep && !dependencies.includes(dep)) {
+                dependencies.push(dep);
+                renderDependencies();
+                document.getElementById('dependency-input').value = '';
             }
         }
 
-        function displayExistingTasks(tasks) {
-            const container = document.getElementById('tasksList');
+        function removeDependency(dep) {
+            dependencies = dependencies.filter(d => d !== dep);
+            renderDependencies();
+        }
+
+        function renderDependencies() {
+            const container = document.getElementById('dependencies-container');
             
-            if (tasks.length === 0) {
-                container.innerHTML = `
-                    <div class="empty-state">
-                        <div class="empty-state-icon">📋</div>
-                        <p>No tasks configured yet</p>
-                    </div>
-                `;
+            if (dependencies.length === 0) {
+                container.innerHTML = '<div class="form-text">Dependencies will appear here. Add them using the input below.</div>';
                 return;
             }
-            
-            container.innerHTML = tasks.map(([name, task]) => `
-                <div style="border: 1px solid var(--border-color); border-radius: var(--border-radius-sm); padding: 12px; margin-bottom: 12px; cursor: pointer; transition: background-color 0.2s ease;" onclick="editTask('${name}')">
-                    <div class="task-name" style="margin-bottom: 4px;">
-                        ${name}
-                        <span class="badge ${task.enabled ? 'badge-enabled' : 'badge-disabled'}">
-                            ${task.enabled ? 'Enabled' : 'Disabled'}
-                        </span>
-                    </div>
-                    <div class="task-type">${task.type}</div>
-                    <div class="action-group" style="margin-top: 8px;">
-                        <button class="action-btn" onclick="event.stopPropagation(); runTask('${name}')" title="Run Now">▶️</button>
-                        <button class="action-btn" onclick="event.stopPropagation(); deleteTask('${name}')" title="Delete">🗑️</button>
-                    </div>
+
+            const html = dependencies.map(dep => `
+                <div class="dependency-tag">
+                    ${dep}
+                    <span class="dependency-remove" onclick="removeDependency('${dep}')">&times;</span>
                 </div>
             `).join('');
-        }
-
-        function updateDependencyOptions() {
-            const select = document.getElementById('dependencySelect');
-            const currentTaskName = document.getElementById('taskName').value;
             
-            select.innerHTML = '<option value="">Select dependency...</option>';
+            container.innerHTML = html;
+        }
+
+        // Form handling
+        function validateTaskName(name) {
+            const regex = /^[a-z0-9_]+$/;
+            return regex.test(name);
+        }
+
+        function validateCronExpression(cron) {
+            if (!cron) return true; // Optional field
             
-            existingTasks.forEach(([name, task]) => {
-                if (name !== currentTaskName) {
-                    select.innerHTML += `<option value="${name}">${name} (${task.type})</option>`;
-                }
-            });
+            // Basic cron validation - 5 parts separated by spaces
+            const parts = cron.trim().split(/\s+/);
+            return parts.length === 5;
         }
 
-        // Dependency management
-        function addDependency() {
-            const select = document.getElementById('dependencySelect');
-            const dependency = select.value;
-            
-            if (dependency && !currentDependencies.includes(dependency)) {
-                currentDependencies.push(dependency);
-                updateDependencyDisplay();
-                select.value = '';
-            }
-        }
-
-        function removeDependency(dependency) {
-            currentDependencies = currentDependencies.filter(d => d !== dependency);
-            updateDependencyDisplay();
-        }
-
-        function updateDependencyDisplay() {
-            const container = document.getElementById('dependencyList');
-            
-            if (currentDependencies.length === 0) {
-                container.innerHTML = '<div class="form-text">Tasks that must succeed before this task runs</div>';
-            } else {
-                container.innerHTML = currentDependencies.map(dep => 
-                    `<span class="dependency-tag">${dep} <span class="dependency-remove" onclick="removeDependency('${dep}')">×</span></span>`
-                ).join('');
-            }
-        }
-
-        // Form management
         function resetForm() {
-            document.getElementById('taskForm').reset();
-            document.getElementById('editMode').value = 'false';
-            document.getElementById('originalTaskName').value = '';
+            document.getElementById('task-form').reset();
+            dependencies = [];
+            renderDependencies();
+            editingTask = null;
+            
             document.getElementById('form-title').textContent = 'Add New Task';
-            document.getElementById('submitText').textContent = 'Add Task';
+            document.getElementById('task-name').disabled = false;
+            
+            // Reset to default values
             document.getElementById('timeout').value = '3600';
-            document.getElementById('retryCount').value = '0';
-            document.getElementById('retryDelay').value = '300';
+            document.getElementById('retry-count').value = '0';
+            document.getElementById('retry-delay').value = '300';
             document.getElementById('enabled').value = 'true';
-            currentDependencies = [];
-            updateDependencyDisplay();
-            updateDependencyOptions();
         }
 
-        function editTask(taskName) {
-            const task = existingTasks.find(([name]) => name === taskName)[1];
+        function loadTaskForEditing(taskName) {
+            const task = currentTasks[taskName];
+            if (!task) return;
+
+            editingTask = taskName;
             
-            // Populate form
-            document.getElementById('editMode').value = 'true';
-            document.getElementById('originalTaskName').value = taskName;
-            document.getElementById('form-title').textContent = 'Edit Task: ' + taskName;
-            document.getElementById('submitText').textContent = 'Update Task';
+            // Update form title and disable name field
+            document.getElementById('form-title').textContent = `Edit Task: ${taskName}`;
+            document.getElementById('task-name').value = taskName;
+            document.getElementById('task-name').disabled = true;
             
-            document.getElementById('taskName').value = taskName;
-            document.getElementById('taskType').value = task.type;
-            document.getElementById('command').value = task.command;
+            // Fill form fields
+            document.getElementById('task-type').value = task.type || '';
+            document.getElementById('command').value = task.command || '';
             document.getElementById('schedule').value = task.schedule || '';
-            document.getElementById('timeout').value = task.timeout;
-            document.getElementById('retryCount').value = task.retry_count;
-            document.getElementById('retryDelay').value = task.retry_delay;
-            document.getElementById('enabled').value = task.enabled.toString();
+            document.getElementById('timeout').value = task.timeout || 3600;
+            document.getElementById('retry-count').value = task.retry_count || 0;
+            document.getElementById('retry-delay').value = task.retry_delay || 300;
+            document.getElementById('enabled').value = task.enabled ? 'true' : 'false';
             
-            currentDependencies = [...task.dependencies];
-            updateDependencyDisplay();
-            updateDependencyOptions();
-        }
-
-        // Task actions
-        async function runTask(taskName) {
-            if (!confirm(`Run task "${taskName}" now?`)) return;
+            // Load dependencies
+            dependencies = task.dependencies || [];
+            renderDependencies();
             
-            try {
-                const response = await fetch(`/api/v2/tasks/${taskName}/run`, {
-                    method: 'POST'
-                });
-                const data = await response.json();
-                
-                if (data.status === 'success') {
-                    showMessage(`Task "${taskName}" started successfully`, 'success');
-                } else {
-                    showMessage(`Failed to start task: ${data.error}`, 'error');
-                }
-            } catch (error) {
-                showMessage(`Error starting task: ${error.message}`, 'error');
-            }
-        }
-
-        async function deleteTask(taskName) {
-            if (!confirm(`Delete task "${taskName}"? This cannot be undone.`)) return;
-            
-            try {
-                const response = await fetch(`/api/v2/tasks/${taskName}`, {
-                    method: 'DELETE'
-                });
-                const data = await response.json();
-                
-                if (data.status === 'success') {
-                    showMessage(`Task "${taskName}" deleted successfully`, 'success');
-                    loadTasks();
-                } else {
-                    showMessage(`Failed to delete task: ${data.error}`, 'error');
-                }
-            } catch (error) {
-                showMessage(`Error deleting task: ${error.message}`, 'error');
-            }
+            // Scroll to form
+            document.querySelector('.form-section').scrollIntoView({ behavior: 'smooth' });
         }
 
         async function testCommand() {
-            const command = document.getElementById('command').value;
+            const command = document.getElementById('command').value.trim();
+            
             if (!command) {
-                showMessage('Please enter a command first', 'error');
+                showMessage('Please enter a command to test', 'warning');
                 return;
             }
-            
+
             try {
                 const response = await fetch('/api/test-command', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ command: command })
+                    body: JSON.stringify({ command })
                 });
-                
+
                 const result = await response.json();
                 
                 if (result.status === 'success') {
-                    showMessage(`Command test successful! Exit code: ${result.exit_code}`, 'success');
+                    showMessage(`Command test completed with exit code ${result.exit_code}`, 'success');
+                    console.log('STDOUT:', result.stdout);
+                    console.log('STDERR:', result.stderr);
                 } else {
                     showMessage(`Command test failed: ${result.error}`, 'error');
                 }
             } catch (error) {
-                showMessage('Error testing command: ' + error.message, 'error');
+                showMessage(`Failed to test command: ${error.message}`, 'error');
             }
         }
 
-        // Form submission
-        document.getElementById('taskForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            
-            const submitBtn = document.querySelector('.btn-primary');
-            const originalText = submitBtn.innerHTML;
-            submitBtn.innerHTML = '<div class="spinner"></div> Processing...';
-            submitBtn.disabled = true;
-            
-            const formData = {
-                name: document.getElementById('taskName').value,
-                type: document.getElementById('taskType').value,
-                command: document.getElementById('command').value,
-                schedule: document.getElementById('schedule').value || null,
-                timeout: parseInt(document.getElementById('timeout').value),
-                retry_count: parseInt(document.getElementById('retryCount').value),
-                retry_delay: parseInt(document.getElementById('retryDelay').value),
-                dependencies: currentDependencies,
-                enabled: document.getElementById('enabled').value === 'true'
-            };
-            
+        // API calls
+        async function fetchTasks() {
             try {
-                const response = await fetch('/api/v2/tasks', {
+                const response = await fetch('/api/tasks');
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                const data = await response.json();
+                return data.tasks || {};
+            } catch (error) {
+                console.error('Error fetching tasks:', error);
+                return {};
+            }
+        }
+
+        async function saveTask(taskData) {
+            try {
+                const response = await fetch(`/api/tasks/${taskData.name}`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify(formData)
+                    body: JSON.stringify(taskData)
                 });
-                
+
                 const result = await response.json();
                 
                 if (result.status === 'success') {
-                    const isEdit = document.getElementById('editMode').value === 'true';
-                    showMessage(`Task ${isEdit ? 'updated' : 'added'} successfully!`, 'success');
+                    showMessage(result.message, 'success');
                     resetForm();
-                    loadTasks();
+                    refreshTasksList();
                 } else {
-                    showMessage('Error: ' + result.error, 'error');
+                    showMessage(result.error, 'error');
                 }
             } catch (error) {
-                showMessage('Error: ' + error.message, 'error');
-            } finally {
-                submitBtn.innerHTML = originalText;
-                submitBtn.disabled = false;
+                showMessage(`Failed to save task: ${error.message}`, 'error');
             }
-        });
+        }
 
-        // Utility functions
-        function showMessage(text, type) {
-            const message = document.getElementById('message');
-            message.textContent = text;
-            message.className = `message ${type}`;
-            message.style.display = 'block';
+        // Tasks list
+        function renderTasksList(tasks) {
+            const container = document.getElementById('tasks-list-content');
             
-            setTimeout(() => {
-                message.style.display = 'none';
-            }, 5000);
+            if (Object.keys(tasks).length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📋</div>
+                        <h3>No tasks found</h3>
+                        <p>Create your first task using the form</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const html = Object.entries(tasks).map(([name, task]) => `
+                <div class="task-item" onclick="loadTaskForEditing('${name}')">
+                    <div class="task-name">
+                        ${name}
+                        <span class="task-status ${task.enabled ? 'enabled' : 'disabled'}">
+                            ${task.enabled ? 'Enabled' : 'Disabled'}
+                        </span>
+                    </div>
+                    <div class="task-details">
+                        Type: ${task.type} | Schedule: ${task.schedule || 'Manual'}
+                    </div>
+                    <div class="task-details">
+                        ${task.command}
+                    </div>
+                </div>
+            `).join('');
+            
+            container.innerHTML = html;
         }
 
-        function exportTasks() {
-            // Implementation for exporting tasks
-            showMessage('Export functionality coming soon', 'success');
+        async function refreshTasksList() {
+            currentTasks = await fetchTasks();
+            renderTasksList(currentTasks);
         }
 
-        function importTasks() {
-            // Implementation for importing tasks
-            showMessage('Import functionality coming soon', 'success');
-        }
+        // Event listeners
+        document.getElementById('task-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            const taskName = document.getElementById('task-name').value.trim();
+            const taskType = document.getElementById('task-type').value;
+            const command = document.getElementById('command').value.trim();
+            const schedule = document.getElementById('schedule').value.trim();
+            
+            // Validation
+            if (!taskName || !taskType || !command) {
+                showMessage('Please fill in all required fields', 'error');
+                return;
+            }
+            
+            if (!validateTaskName(taskName)) {
+                showMessage('Task name must contain only lowercase letters, numbers, and underscores', 'error');
+                return;
+            }
+            
+            if (!validateCronExpression(schedule)) {
+                showMessage('Invalid cron expression format', 'error');
+                return;
+            }
+            
+            // Build task data
+            const taskData = {
+                name: taskName,
+                type: taskType,
+                command: command,
+                schedule: schedule || null,
+                timeout: parseInt(document.getElementById('timeout').value) || 3600,
+                retry_count: parseInt(document.getElementById('retry-count').value) || 0,
+                retry_delay: parseInt(document.getElementById('retry-delay').value) || 300,
+                dependencies: dependencies,
+                enabled: document.getElementById('enabled').value === 'true'
+            };
+            
+            await saveTask(taskData);
+        });
 
-        // Keyboard shortcuts
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 's' && (e.ctrlKey || e.metaKey)) {
+        document.getElementById('dependency-input').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
                 e.preventDefault();
-                document.getElementById('taskForm').dispatchEvent(new Event('submit'));
-            }
-            if (e.key === 'r' && (e.ctrlKey || e.metaKey)) {
-                e.preventDefault();
-                resetForm();
-            }
-            if (e.key === 't' && (e.ctrlKey || e.metaKey)) {
-                e.preventDefault();
-                testCommand();
-            }
-            if (e.key === 'd' && (e.ctrlKey || e.metaKey)) {
-                e.preventDefault();
-                toggleTheme();
+                addDependency(this.value.trim());
             }
         });
+
+        // URL parameter handling for editing
+        function handleUrlParameters() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const editTask = urlParams.get('edit');
+            
+            if (editTask) {
+                // Wait a bit for tasks to load, then load the specific task
+                setTimeout(() => {
+                    if (currentTasks[editTask]) {
+                        loadTaskForEditing(editTask);
+                    }
+                }, 1000);
+            }
+        }
 
         // Initialize
         document.addEventListener('DOMContentLoaded', function() {
             initTheme();
-            loadTasks();
-            
-            // Update dependency options when task name changes
-            document.getElementById('taskName').addEventListener('input', updateDependencyOptions);
+            refreshTasksList();
+            handleUrlParameters();
         });
     </script>
 </body>

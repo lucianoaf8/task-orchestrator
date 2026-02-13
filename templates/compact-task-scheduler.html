@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Task Scheduler</title>
+    <title>Quick Task Scheduler - Task Orchestrator</title>
     <style>
         :root {
             /* Light theme (default) - Aligned with project design */
@@ -72,12 +72,14 @@
         .header {
             background: var(--white);
             padding: 20px;
-            border-radius: var(--radius);
+            border-radius: var(--border-radius);
             margin-bottom: 20px;
             box-shadow: var(--shadow);
             display: flex;
             justify-content: space-between;
             align-items: center;
+            flex-wrap: wrap;
+            gap: 16px;
         }
 
         .header h1 {
@@ -87,6 +89,12 @@
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 12px;
+            align-items: center;
         }
 
         .theme-toggle {
@@ -114,6 +122,7 @@
             box-shadow: var(--shadow);
             overflow: hidden;
             transition: background-color 0.3s ease;
+            margin-bottom: 20px;
         }
 
         .card-header {
@@ -186,7 +195,7 @@
         .btn {
             padding: 8px 16px;
             border: none;
-            border-radius: var(--radius);
+            border-radius: var(--border-radius-sm);
             cursor: pointer;
             font-size: 0.875rem;
             font-weight: 500;
@@ -226,179 +235,120 @@
             cursor: not-allowed;
         }
 
-        .dependency-container {
-            background: var(--light-color);
-            border: 2px dashed var(--border-color);
-            border-radius: var(--border-radius-sm);
-            padding: 12px;
-            min-height: 60px;
-            transition: background-color 0.3s ease, border-color 0.3s ease;
+        .btn-block {
+            width: 100%;
+            justify-content: center;
         }
 
-        .dependency-tag {
-            display: inline-flex;
-            align-items: center;
-            background: var(--primary-color);
-            color: white;
-            padding: 4px 12px;
-            margin: 4px;
-            border-radius: 20px;
-            font-size: 0.75rem;
-            font-weight: 500;
-            gap: 6px;
+        /* Schedule types */
+        .schedule-type {
+            display: none;
         }
 
-        .dependency-remove {
+        .schedule-type.active {
+            display: block;
+        }
+
+        .schedule-tabs {
+            display: flex;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 16px;
+        }
+
+        .schedule-tab {
+            flex: 1;
+            padding: 8px 16px;
+            text-align: center;
+            background: none;
+            border: none;
+            border-bottom: 2px solid transparent;
             cursor: pointer;
-            opacity: 0.8;
-            font-weight: bold;
-        }
-
-        .dependency-remove:hover {
-            opacity: 1;
-        }
-
-        .task-list {
-            max-height: 200px;
-            overflow-y: auto;
-        }
-
-        .task-item {
-            border: 1px solid var(--border-color);
-            border-radius: var(--border-radius-sm);
-            padding: 12px;
-            margin-bottom: 8px;
-            cursor: pointer;
+            font-size: 0.875rem;
+            color: var(--text-muted);
             transition: all 0.2s ease;
         }
 
-        .task-item:hover {
-            background: var(--light-color);
-            border-color: var(--primary-color);
+        .schedule-tab.active {
+            color: var(--primary-color);
+            border-bottom-color: var(--primary-color);
         }
 
-        .task-name {
-            font-weight: 600;
-            color: var(--text-color);
-            margin-bottom: 4px;
+        .schedule-tab:hover {
+            color: var(--primary-color);
         }
 
-        .task-meta {
-            font-size: 0.75rem;
-            color: var(--text-muted);
-            display: flex;
-            gap: 8px;
-        }
-
-        .badge {
-            padding: 2px 6px;
-            border-radius: 10px;
-            font-size: 0.625rem;
-            font-weight: 600;
-            text-transform: uppercase;
-        }
-
-        .badge-enabled {
-            background: var(--success-bg);
-            color: var(--success-color);
-        }
-
-        .badge-disabled {
-            background: var(--light-color);
-            color: var(--text-muted);
-        }
-
+        /* Messages */
         .message {
-            padding: 16px 20px;
+            padding: 12px 16px;
             border-radius: var(--border-radius-sm);
-            margin-bottom: 20px;
+            margin-bottom: 16px;
             font-size: 0.875rem;
-            font-weight: 500;
-            transition: all 0.3s ease;
-            border-left: 4px solid;
         }
 
         .message.success {
             background: var(--success-bg);
             color: var(--success-color);
-            border-color: var(--success-color);
+            border: 1px solid var(--success-color);
         }
 
         .message.error {
             background: var(--danger-bg);
             color: var(--danger-color);
-            border-color: var(--danger-color);
+            border: 1px solid var(--danger-color);
         }
 
-        .loading {
-            display: inline-block;
-            width: 16px;
-            height: 16px;
-            border: 2px solid var(--light-color);
-            border-top: 2px solid var(--primary-color);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
+        .message.warning {
+            background: var(--warning-bg);
+            color: var(--warning-color);
+            border: 1px solid var(--warning-color);
         }
 
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        .empty-state {
-            text-align: center;
-            padding: 40px 20px;
-            color: var(--text-muted);
-        }
-
-        .form-actions {
-            display: flex;
-            gap: 8px;
-            margin-top: 24px;
-            padding-top: 20px;
-            border-top: 1px solid var(--border-color);
-        }
-
+        /* Collapsible sections */
         .collapsible {
-            margin-bottom: 16px;
+            border-bottom: 1px solid var(--border-color);
         }
 
         .collapsible-header {
-            background: var(--light-color);
-            padding: 12px 16px;
-            border-radius: var(--border-radius-sm);
+            padding: 12px 0;
             cursor: pointer;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            font-weight: 500;
-            font-size: 0.875rem;
-            transition: background-color 0.3s ease;
+            font-weight: 600;
+        }
+
+        .collapsible-header:hover {
+            color: var(--primary-color);
         }
 
         .collapsible-content {
-            padding: 16px;
-            border: 1px solid var(--border-color);
-            border-top: none;
-            border-radius: 0 0 var(--border-radius-sm) var(--border-radius-sm);
-            display: none;
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
         }
 
         .collapsible.active .collapsible-content {
-            display: block;
+            max-height: 500px;
+            padding-bottom: 16px;
         }
 
-        .collapsible-arrow {
-            transition: transform 0.2s ease;
+        .collapsible-icon {
+            transition: transform 0.3s ease;
         }
 
-        .collapsible.active .collapsible-arrow {
+        .collapsible.active .collapsible-icon {
             transform: rotate(180deg);
         }
 
+        /* Responsive Design */
         @media (max-width: 768px) {
             .container {
                 padding: 12px;
+            }
+
+            .header {
+                flex-direction: column;
+                text-align: center;
             }
 
             .form-row,
@@ -406,24 +356,13 @@
                 grid-template-columns: 1fr;
             }
 
-            .header {
+            .schedule-tabs {
                 flex-direction: column;
-                gap: 16px;
-                text-align: center;
             }
 
-            .header > div:last-child {
-                flex-wrap: wrap;
-                justify-content: center;
-            }
-
-            .card-body {
-                padding: 16px;
-            }
-
-            .btn {
-                font-size: 0.8rem;
-                padding: 8px 12px;
+            .schedule-tab {
+                border-bottom: 1px solid var(--border-color);
+                border-right: none;
             }
         }
     </style>
@@ -432,263 +371,178 @@
     <div class="container">
         <!-- Header -->
         <div class="header">
-            <div>
-                <h1>⚡ Compact Task Scheduler</h1>
-                <p style="color: var(--text-muted); font-size: 1rem; margin-top: 4px;">Quick and easy task creation</p>
-            </div>
-            <div style="display: flex; gap: 12px; align-items: center;">
-                <a href="/" class="btn btn-secondary">
-                    ← Dashboard
-                </a>
-                <a href="/task-manager" class="btn btn-secondary">
-                    📋 Full Manager
-                </a>
-                <button class="theme-toggle" onclick="toggleTheme()">
-                    <span id="themeIcon">🌙</span>
+            <h1>⚡ Quick Task Scheduler</h1>
+            <div class="header-actions">
+                <button class="theme-toggle" onclick="toggleTheme()" id="themeToggle">
+                    <span class="theme-icon" id="themeIcon">🌙</span>
                     <span id="themeText">Dark</span>
                 </button>
+                <a href="/" class="btn btn-secondary">← Dashboard</a>
+                <a href="/task-manager" class="btn btn-secondary">Full Manager</a>
             </div>
         </div>
 
         <!-- Messages -->
         <div id="message" class="message" style="display: none;"></div>
 
-        <!-- Main Form -->
+        <!-- Quick Task Form -->
         <div class="card">
             <div class="card-header">
-                <span id="form-title">Add New Task</span>
-                <div style="display: flex; gap: 8px;">
-                    <button class="btn btn-secondary btn-sm" onclick="resetForm()">Reset</button>
-                    <button class="btn btn-secondary btn-sm" onclick="testCommand()">Test</button>
-                </div>
+                <span>Quick Task Creation</span>
+                <span style="font-size: 0.75rem; opacity: 0.8;">Simplified workflow</span>
             </div>
-            
             <div class="card-body">
-                <form id="taskForm">
-                    <input type="hidden" id="editMode" value="false">
-                    <input type="hidden" id="originalTaskName" value="">
-                    
+                <form id="quick-task-form">
                     <!-- Basic Info -->
-                    <div class="form-group">
-                        <label for="taskName" class="form-label">Task Name *</label>
-                        <input type="text" id="taskName" class="form-control" required placeholder="fetch_customer_data">
-                        <div class="form-text">Unique name (use underscores, no spaces)</div>
-                    </div>
-
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="taskType" class="form-label">Type *</label>
-                            <select id="taskType" class="form-control" required>
-                                <option value="">Select...</option>
-                                <option value="data_job">Data Job</option>
-                                <option value="condition">Condition</option>
-                                <option value="report">Report</option>
-                                <option value="maintenance">Maintenance</option>
-                            </select>
+                            <label for="task-name" class="form-label">Task Name</label>
+                            <input type="text" id="task-name" class="form-control" required>
                         </div>
-
                         <div class="form-group">
-                            <label for="enabled" class="form-label">Status</label>
-                            <select id="enabled" class="form-control">
-                                <option value="true">Enabled</option>
-                                <option value="false">Disabled</option>
+                            <label for="task-type" class="form-label">Type</label>
+                            <select id="task-type" class="form-control" required>
+                                <option value="data_job">Data Job</option>
+                                <option value="shell">Shell Script</option>
+                                <option value="python">Python Script</option>
                             </select>
                         </div>
                     </div>
 
                     <div class="form-group">
-                        <label for="command" class="form-label">Command *</label>
-                        <input type="text" id="command" class="form-control" required placeholder="python scripts/your_script.py">
-                        <div class="form-text">Full command to execute</div>
+                        <label for="command" class="form-label">Command</label>
+                        <input type="text" id="command" class="form-control" placeholder="python script.py" required>
+                        <div class="form-text">Full command with arguments</div>
                     </div>
 
                     <!-- Schedule Section -->
-                    <div class="collapsible" id="scheduleSection">
-                        <div class="collapsible-header" onclick="toggleCollapsible('scheduleSection')">
-                            <span>📅 Schedule</span>
-                            <span class="collapsible-arrow">▼</span>
+                    <div class="form-group">
+                        <label class="form-label">Schedule</label>
+                        <div class="schedule-tabs">
+                            <button type="button" class="schedule-tab active" data-type="manual">Manual</button>
+                            <button type="button" class="schedule-tab" data-type="daily">Daily</button>
+                            <button type="button" class="schedule-tab" data-type="weekly">Weekly</button>
+                            <button type="button" class="schedule-tab" data-type="cron">Custom</button>
                         </div>
-                        <div class="collapsible-content">
-                            <div class="form-group">
-                                <label for="scheduleType" class="form-label">Run Schedule</label>
-                                <select id="scheduleType" class="form-control" onchange="updateScheduleFields()">
-                                    <option value="manual">Manual Only</option>
-                                    <option value="daily">Daily</option>
-                                    <option value="weekly">Weekly</option>
-                                    <option value="monthly">Monthly</option>
-                                    <option value="interval">Every X Minutes</option>
-                                    <option value="custom">Custom Cron</option>
-                                </select>
-                            </div>
 
-                            <div id="dailyFields" class="form-group" style="display: none;">
-                                <label class="form-label">Daily at</label>
-                                <div class="schedule-row">
+                        <!-- Manual -->
+                        <div class="schedule-type active" id="schedule-manual">
+                            <div class="form-text">Task will only run when triggered manually</div>
+                        </div>
+
+                        <!-- Daily -->
+                        <div class="schedule-type" id="schedule-daily">
+                            <div class="schedule-row">
+                                <div class="form-group">
+                                    <label class="form-label">Hour</label>
                                     <select id="dailyHour" class="form-control">
-                                        <option value="">Hour</option>
-                                        <!-- Hours will be populated by JS -->
+                                        <!-- Populated by JavaScript -->
                                     </select>
-                                    <select id="dailyMinute" class="form-control">
-                                        <option value="">Minute</option>
-                                        <!-- Minutes will be populated by JS -->
-                                    </select>
-                                    <div></div>
                                 </div>
+                                <div class="form-group">
+                                    <label class="form-label">Minute</label>
+                                    <select id="dailyMinute" class="form-control">
+                                        <!-- Populated by JavaScript -->
+                                    </select>
+                                </div>
+                                <div></div>
                             </div>
+                        </div>
 
-                            <div id="weeklyFields" class="form-group" style="display: none;">
-                                <label class="form-label">Weekly on</label>
-                                <div class="schedule-row">
+                        <!-- Weekly -->
+                        <div class="schedule-type" id="schedule-weekly">
+                            <div class="schedule-row">
+                                <div class="form-group">
+                                    <label class="form-label">Day</label>
                                     <select id="weeklyDay" class="form-control">
-                                        <option value="">Day</option>
+                                        <option value="0">Sunday</option>
                                         <option value="1">Monday</option>
                                         <option value="2">Tuesday</option>
                                         <option value="3">Wednesday</option>
                                         <option value="4">Thursday</option>
                                         <option value="5">Friday</option>
                                         <option value="6">Saturday</option>
-                                        <option value="0">Sunday</option>
                                     </select>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Hour</label>
                                     <select id="weeklyHour" class="form-control">
-                                        <option value="">Hour</option>
+                                        <!-- Populated by JavaScript -->
                                     </select>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Minute</label>
                                     <select id="weeklyMinute" class="form-control">
-                                        <option value="">Minute</option>
+                                        <!-- Populated by JavaScript -->
                                     </select>
                                 </div>
                             </div>
+                        </div>
 
-                            <div id="monthlyFields" class="form-group" style="display: none;">
-                                <label class="form-label">Monthly on day</label>
-                                <div class="schedule-row">
-                                    <select id="monthlyDay" class="form-control">
-                                        <option value="">Day</option>
-                                        <option value="1">1st</option>
-                                        <option value="15">15th</option>
-                                        <option value="30">30th</option>
-                                    </select>
-                                    <select id="monthlyHour" class="form-control">
-                                        <option value="">Hour</option>
-                                    </select>
-                                    <select id="monthlyMinute" class="form-control">
-                                        <option value="">Minute</option>
-                                    </select>
+                        <!-- Custom Cron -->
+                        <div class="schedule-type" id="schedule-cron">
+                            <div class="form-group">
+                                <input type="text" id="cronExpression" class="form-control" placeholder="0 6 * * *">
+                                <div class="form-text">
+                                    Cron format: minute hour day month weekday<br>
+                                    Examples: "0 6 * * *" (daily 6 AM), "*/30 * * * *" (every 30 min)
                                 </div>
                             </div>
-
-                            <div id="intervalFields" class="form-group" style="display: none;">
-                                <label for="intervalMinutes" class="form-label">Every X minutes</label>
-                                <select id="intervalMinutes" class="form-control">
-                                    <option value="">Select interval</option>
-                                    <option value="5">Every 5 minutes</option>
-                                    <option value="15">Every 15 minutes</option>
-                                    <option value="30">Every 30 minutes</option>
-                                    <option value="60">Every hour</option>
-                                </select>
-                            </div>
-
-                            <div id="customFields" class="form-group" style="display: none;">
-                                <label for="customCron" class="form-label">Custom Cron Expression</label>
-                                <input type="text" id="customCron" class="form-control" placeholder="0 6 * * *">
-                                <div class="form-text">Format: minute hour day month weekday</div>
-                            </div>
-
-                            <div id="schedulePreview" class="form-text" style="font-weight: 500; color: var(--primary);"></div>
                         </div>
                     </div>
 
-                    <!-- Advanced Settings -->
-                    <div class="collapsible" id="advancedSection">
-                        <div class="collapsible-header" onclick="toggleCollapsible('advancedSection')">
-                            <span>⚙️ Advanced Settings</span>
-                            <span class="collapsible-arrow">▼</span>
+                    <!-- Advanced Options (Collapsible) -->
+                    <div class="collapsible" id="advanced-options">
+                        <div class="collapsible-header" onclick="toggleCollapsible('advanced-options')">
+                            <span>Advanced Options</span>
+                            <span class="collapsible-icon">▼</span>
                         </div>
                         <div class="collapsible-content">
                             <div class="form-row">
                                 <div class="form-group">
-                                    <label for="timeout" class="form-label">Timeout (minutes)</label>
-                                    <select id="timeout" class="form-control">
-                                        <option value="1800">30 minutes</option>
-                                        <option value="3600" selected>1 hour</option>
-                                        <option value="7200">2 hours</option>
-                                        <option value="14400">4 hours</option>
-                                    </select>
+                                    <label for="timeout" class="form-label">Timeout (sec)</label>
+                                    <input type="number" id="timeout" class="form-control" value="3600">
                                 </div>
-
                                 <div class="form-group">
-                                    <label for="retryCount" class="form-label">Retry Count</label>
-                                    <select id="retryCount" class="form-control">
-                                        <option value="0" selected>No retries</option>
-                                        <option value="1">1 retry</option>
-                                        <option value="2">2 retries</option>
-                                        <option value="3">3 retries</option>
-                                    </select>
+                                    <label for="retry-count" class="form-label">Retry Count</label>
+                                    <input type="number" id="retry-count" class="form-control" value="0" min="0" max="3">
                                 </div>
                             </div>
-
                             <div class="form-group">
-                                <label for="retryDelay" class="form-label">Retry Delay</label>
-                                <select id="retryDelay" class="form-control">
-                                    <option value="60">1 minute</option>
-                                    <option value="300" selected>5 minutes</option>
-                                    <option value="600">10 minutes</option>
-                                    <option value="1800">30 minutes</option>
+                                <label for="enabled" class="form-label">Status</label>
+                                <select id="enabled" class="form-control">
+                                    <option value="true">Enabled</option>
+                                    <option value="false">Disabled</option>
                                 </select>
-                            </div>
-
-                            <div class="form-group">
-                                <label class="form-label">Dependencies</label>
-                                <select id="dependencySelect" class="form-control" onchange="addDependency()">
-                                    <option value="">Add dependency...</option>
-                                </select>
-                                <div id="dependencyList" class="dependency-container">
-                                    <div class="form-text">Tasks that must succeed first</div>
-                                </div>
                             </div>
                         </div>
                     </div>
 
-                    <div class="form-actions">
-                        <button type="submit" class="btn btn-primary">
-                            <span id="submitText">Add Task</span>
+                    <!-- Submit Button -->
+                    <div style="margin-top: 24px;">
+                        <button type="submit" class="btn btn-primary btn-block">
+                            Create & Schedule Task
                         </button>
                     </div>
                 </form>
             </div>
         </div>
 
-        <!-- Existing Tasks -->
-        <div class="card" style="margin-top: 20px;">
+        <!-- Recent Tasks -->
+        <div class="card">
             <div class="card-header">
-                <span>📋 Existing Tasks</span>
-                <button class="btn btn-secondary btn-sm" onclick="loadTasks()">
-                    🔄 Refresh
-                </button>
+                <span>Recent Tasks</span>
+                <button class="btn btn-secondary btn-sm" onclick="refreshRecentTasks()">Refresh</button>
             </div>
-            <div class="card-body">
-                <div id="tasksList">
-                    <div class="loading"></div>
-                    Loading tasks...
-                </div>
+            <div class="card-body" id="recent-tasks">
+                <div style="text-align: center; color: var(--text-muted);">Loading...</div>
             </div>
         </div>
     </div>
 
     <script>
         // Global state
-        let currentDependencies = [];
-        let existingTasks = [];
-
-        // Initialize
-        document.addEventListener('DOMContentLoaded', function() {
-            initTheme();
-            populateTimeFields();
-            loadTasks();
-            updateScheduleFields();
-            
-            // Update dependency options when task name changes
-            document.getElementById('taskName').addEventListener('input', updateDependencyOptions);
-        });
+        let recentTasks = {};
 
         // Theme management
         function initTheme() {
@@ -698,8 +552,8 @@
         }
 
         function toggleTheme() {
-            const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
-            const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+            const currentTheme = document.documentElement.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
             
             document.documentElement.setAttribute('data-theme', newTheme);
             localStorage.setItem('theme', newTheme);
@@ -719,367 +573,255 @@
             }
         }
 
+        // Message handling
+        function showMessage(text, type = 'info') {
+            const messageDiv = document.getElementById('message');
+            messageDiv.textContent = text;
+            messageDiv.className = `message ${type}`;
+            messageDiv.style.display = 'block';
+            
+            setTimeout(() => {
+                messageDiv.style.display = 'none';
+            }, 5000);
+        }
+
         // Collapsible sections
         function toggleCollapsible(sectionId) {
             const section = document.getElementById(sectionId);
             section.classList.toggle('active');
         }
 
+        // Schedule management
+        function updateScheduleFields() {
+            const scheduleType = document.querySelector('.schedule-tab.active').dataset.type;
+            
+            // Hide all schedule types
+            document.querySelectorAll('.schedule-type').forEach(el => {
+                el.classList.remove('active');
+            });
+            
+            // Show active type
+            document.getElementById(`schedule-${scheduleType}`).classList.add('active');
+        }
+
+        function generateCronExpression() {
+            const activeTab = document.querySelector('.schedule-tab.active').dataset.type;
+            
+            switch (activeTab) {
+                case 'manual':
+                    return '';
+                case 'daily':
+                    const dailyHour = document.getElementById('dailyHour').value;
+                    const dailyMinute = document.getElementById('dailyMinute').value;
+                    return `${dailyMinute} ${dailyHour} * * *`;
+                case 'weekly':
+                    const weeklyDay = document.getElementById('weeklyDay').value;
+                    const weeklyHour = document.getElementById('weeklyHour').value;
+                    const weeklyMinute = document.getElementById('weeklyMinute').value;
+                    return `${weeklyMinute} ${weeklyHour} * * ${weeklyDay}`;
+                case 'cron':
+                    return document.getElementById('cronExpression').value.trim();
+                default:
+                    return '';
+            }
+        }
+
         // Populate time fields
         function populateTimeFields() {
-            const hourSelects = ['dailyHour', 'weeklyHour', 'monthlyHour'];
-            const minuteSelects = ['dailyMinute', 'weeklyMinute', 'monthlyMinute'];
+            const hourSelects = ['dailyHour', 'weeklyHour'];
+            const minuteSelects = ['dailyMinute', 'weeklyMinute'];
             
             hourSelects.forEach(selectId => {
                 const select = document.getElementById(selectId);
+                select.innerHTML = '';
                 for (let i = 0; i < 24; i++) {
                     const hour = i.toString().padStart(2, '0');
-                    select.innerHTML += `<option value="${i}">${hour}:00</option>`;
+                    const option = document.createElement('option');
+                    option.value = i;
+                    option.textContent = `${hour}:00`;
+                    if (i === 6) option.selected = true; // Default to 6 AM
+                    select.appendChild(option);
                 }
             });
             
             minuteSelects.forEach(selectId => {
                 const select = document.getElementById(selectId);
+                select.innerHTML = '';
                 for (let i = 0; i < 60; i += 15) {
                     const minute = i.toString().padStart(2, '0');
-                    select.innerHTML += `<option value="${i}">:${minute}</option>`;
+                    const option = document.createElement('option');
+                    option.value = i;
+                    option.textContent = `:${minute}`;
+                    if (i === 0) option.selected = true;
+                    select.appendChild(option);
                 }
             });
         }
 
-        // Schedule management
-        function updateScheduleFields() {
-            const scheduleType = document.getElementById('scheduleType').value;
-            const fields = ['dailyFields', 'weeklyFields', 'monthlyFields', 'intervalFields', 'customFields'];
-            
-            fields.forEach(fieldId => {
-                document.getElementById(fieldId).style.display = 'none';
-            });
-            
-            if (scheduleType !== 'manual') {
-                document.getElementById(scheduleType + 'Fields').style.display = 'block';
-            }
-            
-            updateSchedulePreview();
-        }
-
-        function updateSchedulePreview() {
-            const scheduleType = document.getElementById('scheduleType').value;
-            const preview = document.getElementById('schedulePreview');
-            let text = '';
-            
-            switch (scheduleType) {
-                case 'manual':
-                    text = 'Manual execution only';
-                    break;
-                case 'daily':
-                    const dailyHour = document.getElementById('dailyHour').value;
-                    const dailyMinute = document.getElementById('dailyMinute').value;
-                    if (dailyHour && dailyMinute) {
-                        text = `Runs daily at ${dailyHour.padStart(2, '0')}:${dailyMinute.padStart(2, '0')}`;
-                    }
-                    break;
-                case 'weekly':
-                    const weeklyDay = document.getElementById('weeklyDay').value;
-                    const weeklyHour = document.getElementById('weeklyHour').value;
-                    const weeklyMinute = document.getElementById('weeklyMinute').value;
-                    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-                    if (weeklyDay && weeklyHour && weeklyMinute) {
-                        text = `Runs every ${days[weeklyDay]} at ${weeklyHour.padStart(2, '0')}:${weeklyMinute.padStart(2, '0')}`;
-                    }
-                    break;
-                case 'monthly':
-                    const monthlyDay = document.getElementById('monthlyDay').value;
-                    const monthlyHour = document.getElementById('monthlyHour').value;
-                    const monthlyMinute = document.getElementById('monthlyMinute').value;
-                    if (monthlyDay && monthlyHour && monthlyMinute) {
-                        text = `Runs monthly on the ${monthlyDay}${getOrdinalSuffix(monthlyDay)} at ${monthlyHour.padStart(2, '0')}:${monthlyMinute.padStart(2, '0')}`;
-                    }
-                    break;
-                case 'interval':
-                    const intervalMinutes = document.getElementById('intervalMinutes').value;
-                    if (intervalMinutes) {
-                        text = `Runs every ${intervalMinutes} minutes`;
-                    }
-                    break;
-                case 'custom':
-                    const customCron = document.getElementById('customCron').value;
-                    if (customCron) {
-                        text = `Custom schedule: ${customCron}`;
-                    }
-                    break;
-            }
-            
-            preview.textContent = text;
-        }
-
-        function getOrdinalSuffix(num) {
-            const j = num % 10;
-            const k = num % 100;
-            if (j == 1 && k != 11) return "st";
-            if (j == 2 && k != 12) return "nd";
-            if (j == 3 && k != 13) return "rd";
-            return "th";
-        }
-
-        function generateCronExpression() {
-            const scheduleType = document.getElementById('scheduleType').value;
-            
-            switch (scheduleType) {
-                case 'manual':
-                    return null;
-                case 'daily':
-                    const dailyHour = document.getElementById('dailyHour').value;
-                    const dailyMinute = document.getElementById('dailyMinute').value;
-                    return dailyHour && dailyMinute ? `${dailyMinute} ${dailyHour} * * *` : null;
-                case 'weekly':
-                    const weeklyDay = document.getElementById('weeklyDay').value;
-                    const weeklyHour = document.getElementById('weeklyHour').value;
-                    const weeklyMinute = document.getElementById('weeklyMinute').value;
-                    return weeklyDay && weeklyHour && weeklyMinute ? `${weeklyMinute} ${weeklyHour} * * ${weeklyDay}` : null;
-                case 'monthly':
-                    const monthlyDay = document.getElementById('monthlyDay').value;
-                    const monthlyHour = document.getElementById('monthlyHour').value;
-                    const monthlyMinute = document.getElementById('monthlyMinute').value;
-                    return monthlyDay && monthlyHour && monthlyMinute ? `${monthlyMinute} ${monthlyHour} ${monthlyDay} * *` : null;
-                case 'interval':
-                    const intervalMinutes = document.getElementById('intervalMinutes').value;
-                    return intervalMinutes ? `*/${intervalMinutes} * * * *` : null;
-                case 'custom':
-                    return document.getElementById('customCron').value || null;
-                default:
-                    return null;
-            }
-        }
-
-        // Add event listeners for schedule preview updates
-        ['scheduleType', 'dailyHour', 'dailyMinute', 'weeklyDay', 'weeklyHour', 'weeklyMinute', 
-         'monthlyDay', 'monthlyHour', 'monthlyMinute', 'intervalMinutes', 'customCron'].forEach(id => {
-            const element = document.getElementById(id);
-            if (element) {
-                element.addEventListener('change', updateSchedulePreview);
-                element.addEventListener('input', updateSchedulePreview);
-            }
-        });
-
-        // Load existing tasks
-        async function loadTasks() {
+        // API calls
+        async function createTask(taskData) {
             try {
-                const response = await fetch('/api/v2/tasks');
-                const data = await response.json();
-                
-                if (data.status === 'success') {
-                    existingTasks = Object.entries(data.tasks);
-                    displayExistingTasks(existingTasks);
-                    updateDependencyOptions();
-                } else {
-                    showMessage('Error loading tasks: ' + data.error, 'error');
-                }
+                const response = await fetch(`/api/tasks`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(taskData)
+                });
+
+                const result = await response.json();
+                return result;
             } catch (error) {
-                showMessage('Error connecting to server: ' + error.message, 'error');
+                throw new Error(`Failed to create task: ${error.message}`);
             }
         }
 
-        function displayExistingTasks(tasks) {
-            const container = document.getElementById('tasksList');
+        async function fetchRecentTasks() {
+            try {
+                const response = await fetch('/api/tasks');
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                const data = await response.json();
+                return data.tasks || {};
+            } catch (error) {
+                console.error('Error fetching tasks:', error);
+                return {};
+            }
+        }
+
+        // UI updates
+        function renderRecentTasks(tasks) {
+            const container = document.getElementById('recent-tasks');
+            const taskEntries = Object.entries(tasks);
             
-            if (tasks.length === 0) {
-                container.innerHTML = `
-                    <div class="empty-state">
-                        <div>📝</div>
-                        <p>No tasks configured yet</p>
+            if (taskEntries.length === 0) {
+                container.innerHTML = '<div style="text-align: center; color: var(--text-muted);">No tasks found</div>';
+                return;
+            }
+
+            // Show latest 5 tasks
+            const recent = taskEntries.slice(-5).reverse();
+            
+            const html = recent.map(([name, task]) => {
+                const status = task.enabled ? 'Enabled' : 'Disabled';
+                const statusClass = task.enabled ? 'success' : 'muted';
+                
+                return `
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--border-color);">
+                        <div>
+                            <strong>${name}</strong>
+                            <div style="font-size: 0.75rem; color: var(--text-muted);">
+                                ${task.type} | ${task.schedule || 'Manual'}
+                            </div>
+                        </div>
+                        <div style="font-size: 0.75rem; color: var(--${statusClass === 'success' ? 'success' : 'text-muted'}-color);">
+                            ${status}
+                        </div>
                     </div>
                 `;
-                return;
-            }
+            }).join('');
             
-            container.innerHTML = tasks.map(([name, task]) => `
-                <div class="task-item" onclick="editTask('${name}')">
-                    <div class="task-name">
-                        ${name}
-                        <span class="badge ${task.enabled ? 'badge-enabled' : 'badge-disabled'}">
-                            ${task.enabled ? 'ON' : 'OFF'}
-                        </span>
-                    </div>
-                    <div class="task-meta">
-                        <span>${task.type}</span>
-                        <span>${task.schedule || 'Manual'}</span>
-                    </div>
-                </div>
-            `).join('');
+            container.innerHTML = html;
         }
 
-        function updateDependencyOptions() {
-            const select = document.getElementById('dependencySelect');
-            const currentTaskName = document.getElementById('taskName').value;
+        async function refreshRecentTasks() {
+            recentTasks = await fetchRecentTasks();
+            renderRecentTasks(recentTasks);
+        }
+
+        // Form validation
+        function validateTaskName(name) {
+            const regex = /^[a-z0-9_]+$/;
+            return regex.test(name);
+        }
+
+        function validateCronExpression(cron) {
+            if (!cron) return true; // Empty is valid (manual task)
             
-            select.innerHTML = '<option value="">Add dependency...</option>';
-            
-            existingTasks.forEach(([name, task]) => {
-                if (name !== currentTaskName) {
-                    select.innerHTML += `<option value="${name}">${name}</option>`;
+            const parts = cron.trim().split(/\s+/);
+            return parts.length === 5;
+        }
+
+        // Event listeners
+        document.addEventListener('DOMContentLoaded', function() {
+            initTheme();
+            populateTimeFields();
+            refreshRecentTasks();
+
+            // Schedule tab switching
+            document.querySelectorAll('.schedule-tab').forEach(tab => {
+                tab.addEventListener('click', function() {
+                    document.querySelectorAll('.schedule-tab').forEach(t => t.classList.remove('active'));
+                    this.classList.add('active');
+                    updateScheduleFields();
+                });
+            });
+
+            // Form submission
+            document.getElementById('quick-task-form').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                const taskName = document.getElementById('task-name').value.trim();
+                const taskType = document.getElementById('task-type').value;
+                const command = document.getElementById('command').value.trim();
+                const schedule = generateCronExpression();
+                
+                // Validation
+                if (!taskName || !taskType || !command) {
+                    showMessage('Please fill in all required fields', 'error');
+                    return;
+                }
+                
+                if (!validateTaskName(taskName)) {
+                    showMessage('Task name must contain only lowercase letters, numbers, and underscores', 'error');
+                    return;
+                }
+                
+                if (!validateCronExpression(schedule)) {
+                    showMessage('Invalid cron expression', 'error');
+                    return;
+                }
+                
+                // Build task data
+                const taskData = {
+                    name: taskName,
+                    type: taskType,
+                    command: command,
+                    schedule: schedule || null,
+                    timeout: parseInt(document.getElementById('timeout').value) || 3600,
+                    retry_count: parseInt(document.getElementById('retry-count').value) || 0,
+                    retry_delay: 300,
+                    dependencies: [],
+                    enabled: document.getElementById('enabled').value === 'true'
+                };
+                
+                try {
+                    const result = await createTask(taskData);
+                    
+                    if (result.status === 'success') {
+                        showMessage(`Task "${taskName}" created successfully!`, 'success');
+                        
+                        // Reset form
+                        this.reset();
+                        document.getElementById('timeout').value = '3600';
+                        document.getElementById('retry-count').value = '0';
+                        document.getElementById('enabled').value = 'true';
+                        
+                        // Reset schedule to manual
+                        document.querySelectorAll('.schedule-tab').forEach(t => t.classList.remove('active'));
+                        document.querySelector('.schedule-tab[data-type="manual"]').classList.add('active');
+                        updateScheduleFields();
+                        
+                        // Refresh recent tasks
+                        setTimeout(refreshRecentTasks, 1000);
+                        
+                    } else {
+                        showMessage(result.error || 'Failed to create task', 'error');
+                    }
+                } catch (error) {
+                    showMessage(error.message, 'error');
                 }
             });
-        }
-
-        // Dependency management
-        function addDependency() {
-            const select = document.getElementById('dependencySelect');
-            const dependency = select.value;
-            
-            if (dependency && !currentDependencies.includes(dependency)) {
-                currentDependencies.push(dependency);
-                updateDependencyDisplay();
-                select.value = '';
-            }
-        }
-
-        function removeDependency(dependency) {
-            currentDependencies = currentDependencies.filter(d => d !== dependency);
-            updateDependencyDisplay();
-        }
-
-        function updateDependencyDisplay() {
-            const container = document.getElementById('dependencyList');
-            
-            if (currentDependencies.length === 0) {
-                container.innerHTML = '<div class="form-text">Tasks that must succeed first</div>';
-            } else {
-                container.innerHTML = currentDependencies.map(dep => 
-                    `<span class="dependency-tag">${dep} <span class="dependency-remove" onclick="removeDependency('${dep}')">×</span></span>`
-                ).join('');
-            }
-        }
-
-        // Form management
-        function resetForm() {
-            document.getElementById('taskForm').reset();
-            document.getElementById('editMode').value = 'false';
-            document.getElementById('originalTaskName').value = '';
-            document.getElementById('form-title').textContent = 'Add New Task';
-            document.getElementById('submitText').textContent = 'Add Task';
-            currentDependencies = [];
-            updateDependencyDisplay();
-            updateDependencyOptions();
-            updateScheduleFields();
-        }
-
-        function editTask(taskName) {
-            const task = existingTasks.find(([name]) => name === taskName)[1];
-            
-            // Populate form
-            document.getElementById('editMode').value = 'true';
-            document.getElementById('originalTaskName').value = taskName;
-            document.getElementById('form-title').textContent = `Edit: ${taskName}`;
-            document.getElementById('submitText').textContent = 'Update Task';
-            
-            document.getElementById('taskName').value = taskName;
-            document.getElementById('taskType').value = task.type;
-            document.getElementById('command').value = task.command;
-            document.getElementById('timeout').value = task.timeout;
-            document.getElementById('retryCount').value = task.retry_count;
-            document.getElementById('retryDelay').value = task.retry_delay;
-            document.getElementById('enabled').value = task.enabled.toString();
-            
-            // Handle schedule
-            if (task.schedule) {
-                document.getElementById('scheduleType').value = 'custom';
-                document.getElementById('customCron').value = task.schedule;
-                updateScheduleFields();
-            }
-            
-            currentDependencies = [...task.dependencies];
-            updateDependencyDisplay();
-            updateDependencyOptions();
-        }
-
-        async function testCommand() {
-            const command = document.getElementById('command').value;
-            if (!command) {
-                showMessage('Please enter a command first', 'error');
-                return;
-            }
-            
-            try {
-                const response = await fetch('/api/test-command', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ command: command })
-                });
-                
-                const result = await response.json();
-                
-                if (result.status === 'success') {
-                    showMessage(`✅ Command test successful! Exit code: ${result.exit_code}`, 'success');
-                } else {
-                    showMessage(`❌ Command test failed: ${result.error}`, 'error');
-                }
-            } catch (error) {
-                showMessage('Error testing command: ' + error.message, 'error');
-            }
-        }
-
-        // Form submission
-        document.getElementById('taskForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            
-            const submitBtn = document.querySelector('.btn-primary');
-            const originalText = submitBtn.innerHTML;
-            submitBtn.innerHTML = '<div class="loading"></div> Processing...';
-            submitBtn.disabled = true;
-            
-            const formData = {
-                name: document.getElementById('taskName').value,
-                type: document.getElementById('taskType').value,
-                command: document.getElementById('command').value,
-                schedule: generateCronExpression(),
-                timeout: parseInt(document.getElementById('timeout').value),
-                retry_count: parseInt(document.getElementById('retryCount').value),
-                retry_delay: parseInt(document.getElementById('retryDelay').value),
-                dependencies: currentDependencies,
-                enabled: document.getElementById('enabled').value === 'true'
-            };
-            
-            try {
-                const response = await fetch('/api/v2/tasks', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(formData)
-                });
-                
-                const result = await response.json();
-                
-                if (result.status === 'success') {
-                    const isEdit = document.getElementById('editMode').value === 'true';
-                    showMessage(`✅ Task ${isEdit ? 'updated' : 'added'} successfully!`, 'success');
-                    resetForm();
-                    loadTasks();
-                } else {
-                    showMessage('❌ Error: ' + result.error, 'error');
-                }
-            } catch (error) {
-                showMessage('❌ Error: ' + error.message, 'error');
-            } finally {
-                submitBtn.innerHTML = originalText;
-                submitBtn.disabled = false;
-            }
         });
-
-        // Utility functions
-        function showMessage(text, type) {
-            const message = document.getElementById('message');
-            message.textContent = text;
-            message.className = `message ${type}`;
-            message.style.display = 'block';
-            
-            setTimeout(() => {
-                message.style.display = 'none';
-            }, 5000);
-        }
     </script>
 </body>
 </html>

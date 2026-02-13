@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -147,6 +147,25 @@
             font-size: 12px;
         }
 
+        .theme-toggle {
+            background: var(--light-color);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 8px 16px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.875rem;
+            color: var(--text-color);
+            font-weight: 500;
+            transition: background-color 0.3s ease;
+        }
+
+        .theme-toggle:hover {
+            background: var(--border-color);
+        }
+
         /* Stats Grid */
         .stats-grid {
             display: grid;
@@ -251,6 +270,8 @@
             background: var(--light-color);
             border: 1px solid var(--border-color);
             color: var(--text-color);
+            padding: 6px 12px;
+            border-radius: var(--border-radius-sm);
             transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
         }
 
@@ -267,184 +288,51 @@
         th, td {
             padding: 16px 20px;
             text-align: left;
-            border-bottom: 1px solid var(--light-color);
+            border-bottom: 1px solid var(--border-color);
         }
 
         th {
             background: var(--light-color);
             font-weight: 600;
             color: var(--text-color);
-            white-space: nowrap;
-            transition: background-color 0.3s ease, color 0.3s ease;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
-        tbody tr {
-            transition: background-color 0.2s ease;
+        tr:hover {
+            background: rgba(52, 152, 219, 0.05);
         }
 
-        .task-name {
-            font-weight: 600;
-            color: var(--dark-color);
-        }
-
-        .task-schedule {
-            font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
-            font-size: 0.85rem;
-            background: var(--light-color);
-            padding: 4px 8px;
-            border-radius: 4px;
-            color: var(--text-color);
-            transition: background-color 0.3s ease, color 0.3s ease;
-        }
-
-        .task-dependencies {
-            font-size: 0.85rem;
-            color: var(--text-muted);
-        }
-
-        /* Status Badges */
         .status-badge {
             padding: 4px 12px;
             border-radius: 20px;
-            font-size: 12px;
+            font-size: 0.75rem;
             font-weight: 600;
             text-transform: uppercase;
             letter-spacing: 0.5px;
-            transition: background-color 0.3s ease, color 0.3s ease;
         }
 
-        .badge-success {
+        .status-badge.success {
             background: var(--success-bg);
             color: var(--success-color);
         }
 
-        .badge-failed {
+        .status-badge.failed {
             background: var(--danger-bg);
             color: var(--danger-color);
         }
 
-        .badge-running {
+        .status-badge.running {
             background: var(--warning-bg);
             color: var(--warning-color);
-            animation: pulse 2s infinite;
         }
 
-        .badge-never {
+        .status-badge.never {
             background: var(--light-color);
             color: var(--text-muted);
         }
 
-        .badge-skipped {
-            background: var(--light-color);
-            color: var(--text-muted);
-        }
-
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.7; }
-        }
-
-        /* Sidebar */
-        .sidebar {
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-        }
-
-        .sidebar-card {
-            background: var(--white);
-            border-radius: var(--border-radius);
-            padding: 20px;
-            box-shadow: var(--shadow);
-            transition: background-color 0.3s ease;
-        }
-
-        .sidebar-card h3 {
-            margin-bottom: 16px;
-            color: var(--dark-color);
-            font-size: 1.2rem;
-        }
-
-        /* Recent Activity */
-        .activity-item {
-            padding: 12px 0;
-            border-bottom: 1px solid var(--light-color);
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            gap: 12px;
-        }
-
-        .activity-item:last-child {
-            border-bottom: none;
-        }
-
-        .activity-content {
-            flex: 1;
-        }
-
-        .activity-task {
-            font-weight: 600;
-            color: var(--dark-color);
-            margin-bottom: 4px;
-        }
-
-        .activity-time {
-            font-size: 0.85rem;
-            color: var(--text-muted);
-        }
-
-        .activity-status {
-            font-size: 0.75rem;
-        }
-
-        /* Loading States */
-        .loading {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 40px;
-            color: var(--text-muted);
-        }
-
-        .spinner {
-            width: 24px;
-            height: 24px;
-            border: 3px solid var(--light-color);
-            border-top: 3px solid var(--primary-color);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin-right: 12px;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        /* Error States */
-        .error {
-            background: var(--danger-bg);
-            color: var(--danger-color);
-            padding: 16px 20px;
-            border-radius: var(--border-radius-sm);
-            margin: 20px;
-            border-left: 4px solid var(--danger-color);
-        }
-
-        .empty-state {
-            text-align: center;
-            padding: 60px 20px;
-            color: var(--text-muted);
-        }
-
-        .empty-state-icon {
-            font-size: 3rem;
-            margin-bottom: 16px;
-            opacity: 0.5;
-        }
-
-        /* Status Icons */
         .status-icon {
             display: inline-block;
             width: 8px;
@@ -457,6 +345,80 @@
         .status-icon.failed { background: var(--danger-color); }
         .status-icon.running { background: var(--warning-color); }
         .status-icon.never { background: var(--text-muted); }
+
+        /* Sidebar */
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .sidebar-card {
+            background: var(--white);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+            transition: background-color 0.3s ease;
+        }
+
+        .sidebar-header {
+            background: var(--primary-color);
+            color: var(--white);
+            padding: 16px 20px;
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+
+        .sidebar-content {
+            padding: 20px;
+        }
+
+        /* Loading States */
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 40px;
+            color: var(--text-muted);
+        }
+
+        .loading::after {
+            content: '';
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--border-color);
+            border-top: 2px solid var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-left: 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-muted);
+        }
+
+        .empty-state-icon {
+            font-size: 3rem;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+
+        .empty-state h3 {
+            margin-bottom: 8px;
+            color: var(--text-color);
+        }
+
+        .empty-state p {
+            margin-bottom: 20px;
+        }
 
         /* Responsive Design */
         @media (max-width: 768px) {
@@ -547,53 +509,30 @@
             padding: 4px 8px;
             font-size: 0.75rem;
             border-radius: 4px;
-            border: 1px solid var(--border-color);
-            background: var(--white);
-            color: var(--text-color);
+            border: none;
             cursor: pointer;
-            transition: background-color 0.2s ease, color 0.2s ease;
-        }
-
-        /* Theme Toggle */
-        .theme-toggle {
             background: var(--light-color);
-            border: 1px solid var(--border-color);
-            border-radius: 20px;
-            padding: 8px 16px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            transition: background-color 0.3s ease;
             color: var(--text-color);
-            font-weight: 500;
-            font-size: 14px;
+            transition: background-color 0.2s ease;
         }
 
-        .theme-icon {
-            font-size: 1.2rem;
+        .quick-action:hover {
+            background: var(--border-color);
         }
 
-        /* Connection status */
-        .connection-status {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            padding: 8px 16px;
-            border-radius: 20px;
-            font-size: 0.85rem;
-            font-weight: 500;
-            z-index: 1000;
+        .quick-action.run {
+            background: var(--success-color);
+            color: var(--white);
         }
 
-        .connection-status.online {
-            background: var(--success-bg);
-            color: var(--success-color);
+        .quick-action.edit {
+            background: var(--primary-color);
+            color: var(--white);
         }
 
-        .connection-status.offline {
-            background: var(--danger-bg);
-            color: var(--danger-color);
+        .quick-action.delete {
+            background: var(--danger-color);
+            color: var(--white);
         }
     </style>
 </head>
@@ -603,81 +542,89 @@
         <div class="header">
             <div class="header-content">
                 <h1>Task Orchestrator</h1>
-                <p>Monitor and manage your automated data pipelines</p>
+                <p id="last-updated">Real-time monitoring and task management</p>
             </div>
             <div class="header-actions">
                 <button class="theme-toggle" onclick="toggleTheme()" id="themeToggle">
                     <span class="theme-icon" id="themeIcon">🌙</span>
                     <span id="themeText">Dark</span>
                 </button>
-                <button class="btn btn-secondary btn-sm" onclick="toggleAutoRefresh()" id="autoRefreshBtn">
-                    <span id="autoRefreshIcon">⏸️</span> Auto-refresh
-                </button>
-                <button class="btn btn-primary" onclick="loadTasks()">
-                    🔄 Refresh
-                </button>
-                <a href="/task-manager" class="btn btn-success">
-                    📋 Manage Tasks
+                <a href="/task-manager" class="btn btn-primary">
+                    + Add Task
                 </a>
-                <a href="/compact-scheduler" class="btn btn-primary">
+                <a href="/compact-scheduler" class="btn btn-secondary">
                     ⚡ Quick Add
                 </a>
+                <button class="btn btn-success" onclick="refreshData()">
+                    🔄 Refresh
+                </button>
             </div>
         </div>
 
         <!-- Stats Grid -->
         <div class="stats-grid">
             <div class="stat-card">
-                <div class="stat-number total" id="totalTasks">-</div>
+                <div class="stat-number total" id="total-tasks">-</div>
                 <div class="stat-label">Total Tasks</div>
-                <div class="stat-trend" id="totalTrend"></div>
+                <div class="stat-trend" id="total-trend">Loading...</div>
             </div>
             <div class="stat-card">
-                <div class="stat-number success" id="successCount">-</div>
-                <div class="stat-label">Recent Success</div>
-                <div class="stat-trend" id="successTrend"></div>
+                <div class="stat-number success" id="success-tasks">-</div>
+                <div class="stat-label">Successful</div>
+                <div class="stat-trend" id="success-trend">Last 24h</div>
             </div>
             <div class="stat-card">
-                <div class="stat-number failed" id="failedCount">-</div>
-                <div class="stat-label">Recent Failures</div>
-                <div class="stat-trend" id="failedTrend"></div>
+                <div class="stat-number failed" id="failed-tasks">-</div>
+                <div class="stat-label">Failed</div>
+                <div class="stat-trend" id="failed-trend">Last 24h</div>
             </div>
             <div class="stat-card">
-                <div class="stat-number running" id="runningCount">-</div>
-                <div class="stat-label">Currently Running</div>
-                <div class="stat-trend" id="runningTrend"></div>
+                <div class="stat-number running" id="running-tasks">-</div>
+                <div class="stat-label">Scheduled</div>
+                <div class="stat-trend" id="running-trend">Windows Scheduler</div>
             </div>
         </div>
 
         <!-- Main Content -->
         <div class="main-content">
-            <!-- Tasks Section -->
+            <!-- Tasks Table -->
             <div class="tasks-section">
                 <div class="section-header">
-                    <h2>Tasks Overview</h2>
+                    <h2>Tasks</h2>
                     <div class="section-controls">
-                        <select id="filterType" onchange="filterTasks()" class="btn btn-secondary btn-sm">
-                            <option value="">All Types</option>
-                            <option value="data_job">Data Jobs</option>
-                            <option value="condition">Conditions</option>
-                            <option value="report">Reports</option>
-                            <option value="maintenance">Maintenance</option>
+                        <select id="status-filter" onchange="filterTasks()">
+                            <option value="all">All Status</option>
+                            <option value="success">Success</option>
+                            <option value="failed">Failed</option>
+                            <option value="running">Running</option>
+                            <option value="never">Never Run</option>
                         </select>
-                        <select id="filterStatus" onchange="filterTasks()" class="btn btn-secondary btn-sm">
-                            <option value="">All Status</option>
-                            <option value="SUCCESS">Success</option>
-                            <option value="FAILED">Failed</option>
-                            <option value="RUNNING">Running</option>
-                            <option value="NEVER">Never Run</option>
+                        <select id="type-filter" onchange="filterTasks()">
+                            <option value="all">All Types</option>
+                            <option value="data_job">Data Jobs</option>
+                            <option value="shell">Shell</option>
+                            <option value="python">Python</option>
                         </select>
                     </div>
                 </div>
-                
-                <div id="tasksContent">
-                    <div class="loading">
-                        <div class="spinner"></div>
-                        Loading tasks...
-                    </div>
+                <div class="table-container">
+                    <table id="tasks-table">
+                        <thead>
+                            <tr>
+                                <th>Task Name</th>
+                                <th>Type</th>
+                                <th>Status</th>
+                                <th>Last Run</th>
+                                <th>Schedule</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tasks-tbody">
+                            <tr>
+                                <td colspan="6" class="loading">Loading tasks...</td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
 
@@ -685,51 +632,58 @@
             <div class="sidebar">
                 <!-- System Status -->
                 <div class="sidebar-card">
-                    <h3>System Status</h3>
-                    <div id="systemStatus">
-                        <div class="loading">
-                            <div class="spinner"></div>
-                            Checking...
+                    <div class="sidebar-header">System Status</div>
+                    <div class="sidebar-content">
+                        <div style="margin-bottom: 12px;">
+                            <strong>Database:</strong> <span id="db-status" class="status-badge never">Loading...</span>
                         </div>
-                    </div>
-                </div>
-
-                <!-- Recent Activity -->
-                <div class="sidebar-card">
-                    <h3>Recent Activity</h3>
-                    <div id="recentActivity">
-                        <div class="loading">
-                            <div class="spinner"></div>
-                            Loading...
+                        <div style="margin-bottom: 12px;">
+                            <strong>Scheduler:</strong> <span id="scheduler-status" class="status-badge never">Loading...</span>
+                        </div>
+                        <div>
+                            <strong>Last Updated:</strong> <span id="last-refresh">-</span>
                         </div>
                     </div>
                 </div>
 
                 <!-- Quick Stats -->
                 <div class="sidebar-card">
-                    <h3>Today's Summary</h3>
-                    <div id="todayStats">
-                        <div class="loading">
-                            <div class="spinner"></div>
-                            Calculating...
+                    <div class="sidebar-header">Quick Stats</div>
+                    <div class="sidebar-content">
+                        <div style="margin-bottom: 12px;">
+                            <strong>Configured:</strong> <span id="configured-count">-</span>
                         </div>
+                        <div style="margin-bottom: 12px;">
+                            <strong>Scheduled:</strong> <span id="scheduled-count">-</span>
+                        </div>
+                        <div>
+                            <strong>Active:</strong> <span id="active-count">-</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Activity -->
+                <div class="sidebar-card">
+                    <div class="sidebar-header">Recent Activity</div>
+                    <div class="sidebar-content" id="recent-activity">
+                        <div class="loading">Loading...</div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Refresh Indicator -->
+    <!-- Auto-refresh indicator -->
     <div class="refresh-indicator" id="refreshIndicator">
-        Refreshing data...
-    </div>
-
-    <!-- Connection Status -->
-    <div class="connection-status online" id="connectionStatus">
-        🟢 Connected
+        Data refreshed
     </div>
 
     <script>
+        // Global state
+        let tasks = {};
+        let filteredTasks = {};
+        let autoRefreshInterval;
+
         // Theme management
         function initTheme() {
             const savedTheme = localStorage.getItem('theme') || 'light';
@@ -738,8 +692,8 @@
         }
 
         function toggleTheme() {
-            const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
-            const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+            const currentTheme = document.documentElement.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
             
             document.documentElement.setAttribute('data-theme', newTheme);
             localStorage.setItem('theme', newTheme);
@@ -759,16 +713,278 @@
             }
         }
 
-        // Global state
-        let allTasks = {};
-        let refreshInterval;
-        let autoRefreshEnabled = true;
-        let lastUpdateTime = null;
+        // API calls - FIXED ENDPOINTS
+        async function fetchTasks() {
+            try {
+                console.log('Fetching tasks from /api/tasks...');
+                const response = await fetch('/api/tasks');
+                if (!response.ok) {
+                    console.error(`HTTP ${response.status} from /api/tasks`);
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                const data = await response.json();
+                console.log('Tasks fetched successfully:', Object.keys(data.tasks || {}).length, 'tasks');
+                return data.tasks || {};
+            } catch (error) {
+                console.error('Error fetching tasks:', error);
+                return {};
+            }
+        }
+
+        async function fetchSystemStatus() {
+            try {
+                console.log('Fetching system status...');
+                const [healthResponse, schedulerResponse] = await Promise.all([
+                    fetch('/api/health').catch(err => {
+                        console.warn('Health endpoint failed, trying legacy:', err);
+                        return fetch('/health');
+                    }),
+                    fetch('/api/system/scheduler-status').catch(err => {
+                        console.warn('Scheduler status endpoint failed:', err);
+                        return { ok: false };
+                    })
+                ]);
+
+                const health = healthResponse.ok ? await healthResponse.json() : { status: 'unhealthy' };
+                const scheduler = schedulerResponse.ok ? await schedulerResponse.json() : { configured: 0, scheduled: 0 };
+
+                console.log('System status fetched:', health.status, scheduler);
+                return { health, scheduler };
+            } catch (error) {
+                console.error('Error fetching system status:', error);
+                return { 
+                    health: { status: 'error' }, 
+                    scheduler: { configured: 0, scheduled: 0 } 
+                };
+            }
+        }
+
+        async function runTask(taskName) {
+            try {
+                console.log('Running task:', taskName);
+                const response = await fetch(`/api/tasks/${taskName}/run`, {
+                    method: 'POST'
+                });
+                const result = await response.json();
+                
+                if (response.ok) {
+                    showNotification(result.message || `Task ${taskName} started successfully`, 'success');
+                    // Refresh after 2 seconds
+                    setTimeout(refreshData, 2000);
+                } else {
+                    showNotification(result.error || 'Failed to run task', 'error');
+                }
+            } catch (error) {
+                showNotification('Failed to run task: ' + error.message, 'error');
+            }
+        }
+
+        // Data processing
+        function updateStats(tasksData, systemData) {
+            const taskArray = Object.values(tasksData);
+            const total = taskArray.length;
+            
+            // Count by status
+            let success = 0, failed = 0, never = 0;
+            taskArray.forEach(task => {
+                const status = task.last_execution?.status;
+                if (status === 'SUCCESS') success++;
+                else if (status === 'FAILED') failed++;
+                else never++;
+            });
+
+            // Update UI elements safely
+            const updateElement = (id, value) => {
+                const el = document.getElementById(id);
+                if (el) el.textContent = value;
+            };
+
+            updateElement('total-tasks', total);
+            updateElement('success-tasks', success);
+            updateElement('failed-tasks', failed);
+            updateElement('running-tasks', systemData.scheduler.scheduled || 0);
+
+            // Update trends
+            updateElement('total-trend', `${total} configured`);
+            updateElement('success-trend', `${Math.round(total > 0 ? success/total*100 : 0)}% success rate`);
+            updateElement('failed-trend', `${failed} failures`);
+            updateElement('running-trend', `${systemData.scheduler.scheduled || 0} scheduled`);
+
+            // Update sidebar stats
+            updateElement('configured-count', systemData.scheduler.configured || total);
+            updateElement('scheduled-count', systemData.scheduler.scheduled || 0);
+            updateElement('active-count', taskArray.filter(t => t.enabled !== false).length);
+        }
+
+        function updateSystemStatus(systemData) {
+            const updateStatusBadge = (id, isHealthy, text) => {
+                const el = document.getElementById(id);
+                if (el) {
+                    el.textContent = text;
+                    el.className = `status-badge ${isHealthy ? 'success' : 'failed'}`;
+                }
+            };
+
+            // Database status
+            updateStatusBadge('db-status', systemData.health.status === 'healthy', 
+                            systemData.health.status === 'healthy' ? 'Connected' : 'Error');
+
+            // Scheduler status
+            const isSchedulerOk = systemData.scheduler.scheduled >= 0;
+            updateStatusBadge('scheduler-status', isSchedulerOk, 
+                            isSchedulerOk ? 'Running' : 'Error');
+
+            // Last refresh
+            const lastRefreshEl = document.getElementById('last-refresh');
+            if (lastRefreshEl) {
+                lastRefreshEl.textContent = new Date().toLocaleTimeString();
+            }
+        }
+
+        function renderTasksTable(tasksData) {
+            const tbody = document.getElementById('tasks-tbody');
+            if (!tbody) return;
+            
+            if (Object.keys(tasksData).length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="6" class="empty-state">
+                            <div class="empty-state-icon">📋</div>
+                            <h3>No tasks configured</h3>
+                            <p>Get started by adding your first task</p>
+                            <a href="/task-manager" class="btn btn-primary">Add Task</a>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            const rows = Object.entries(tasksData).map(([name, task]) => {
+                const lastExecution = task.last_execution;
+                const status = lastExecution?.status || 'NEVER';
+                const statusClass = status.toLowerCase() === 'success' ? 'success' : 
+                                status.toLowerCase() === 'failed' ? 'failed' : 'never';
+                
+                const lastRun = lastExecution ? 
+                    new Date(lastExecution.timestamp).toLocaleString() : 'Never';
+
+                const enabledText = task.enabled !== false ? '' : 
+                    '<br><small style="color: var(--text-muted)">Disabled</small>';
+
+                return `
+                    <tr data-task-name="${name}" data-type="${task.type || 'unknown'}" data-status="${statusClass}">
+                        <td>
+                            <strong>${name}</strong>
+                            ${enabledText}
+                        </td>
+                        <td>${task.type || 'Unknown'}</td>
+                        <td>
+                            <span class="status-badge ${statusClass}">
+                                <span class="status-icon ${statusClass}"></span>
+                                ${status}
+                            </span>
+                        </td>
+                        <td>${lastRun}</td>
+                        <td><code>${task.schedule || 'Manual'}</code></td>
+                        <td>
+                            <div class="quick-actions">
+                                <button class="quick-action run" onclick="runTask('${name}')" title="Run Now">▶</button>
+                                <button class="quick-action edit" onclick="editTask('${name}')" title="Edit">✏</button>
+                                <button class="quick-action delete" onclick="deleteTask('${name}')" title="Delete">🗑</button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+
+            tbody.innerHTML = rows;
+        }
+
+        function updateRecentActivity(tasksData) {
+            const recentDiv = document.getElementById('recent-activity');
+            if (!recentDiv) return;
+            
+            const activities = [];
+
+            // Collect recent activities from task history
+            Object.entries(tasksData).forEach(([name, task]) => {
+                if (task.last_execution) {
+                    activities.push({
+                        task: name,
+                        ...task.last_execution,
+                        timestamp: new Date(task.last_execution.timestamp)
+                    });
+                }
+            });
+
+            // Sort by timestamp and take latest 5
+            activities.sort((a, b) => b.timestamp - a.timestamp);
+            const recent = activities.slice(0, 5);
+
+            if (recent.length === 0) {
+                recentDiv.innerHTML = '<p style="color: var(--text-muted);">No recent activity</p>';
+                return;
+            }
+
+            const activityHtml = recent.map(activity => {
+                const timeAgo = getTimeAgo(activity.timestamp);
+                const statusClass = activity.status.toLowerCase() === 'success' ? 'success' : 'failed';
+                
+                return `
+                    <div style="margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid var(--border-color);">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <strong>${activity.task}</strong>
+                            <span class="status-badge ${statusClass}">${activity.status}</span>
+                        </div>
+                        <small style="color: var(--text-muted);">${timeAgo}</small>
+                    </div>
+                `;
+            }).join('');
+
+            recentDiv.innerHTML = activityHtml;
+        }
+
+        // Filtering
+        function filterTasks() {
+            const statusFilter = document.getElementById('status-filter')?.value || 'all';
+            const typeFilter = document.getElementById('type-filter')?.value || 'all';
+            
+            filteredTasks = {};
+            
+            Object.entries(tasks).forEach(([name, task]) => {
+                const taskStatus = task.last_execution?.status?.toLowerCase() || 'never';
+                const matchesStatus = statusFilter === 'all' || taskStatus === statusFilter;
+                const matchesType = typeFilter === 'all' || task.type === typeFilter;
+                
+                if (matchesStatus && matchesType) {
+                    filteredTasks[name] = task;
+                }
+            });
+            
+            renderTasksTable(filteredTasks);
+        }
+
+        // Task actions
+        function editTask(taskName) {
+            window.location.href = `/task-manager?edit=${encodeURIComponent(taskName)}`;
+        }
+
+        function deleteTask(taskName) {
+            if (confirm(`Are you sure you want to delete task "${taskName}"?`)) {
+                fetch(`/api/tasks/${taskName}`, { method: 'DELETE' })
+                    .then(response => response.json())
+                    .then(result => {
+                        showNotification(result.message || 'Task deleted', 'success');
+                        refreshData();
+                    })
+                    .catch(error => {
+                        showNotification('Failed to delete task: ' + error.message, 'error');
+                    });
+            }
+        }
 
         // Utility functions
-        function formatDateTime(dateStr) {
-            if (!dateStr) return 'Never';
-            const date = new Date(dateStr);
+        function getTimeAgo(date) {
             const now = new Date();
             const diffMs = now - date;
             const diffMins = Math.floor(diffMs / 60000);
@@ -778,437 +994,88 @@
             if (diffMins < 1) return 'Just now';
             if (diffMins < 60) return `${diffMins}m ago`;
             if (diffHours < 24) return `${diffHours}h ago`;
-            if (diffDays < 7) return `${diffDays}d ago`;
-            
-            return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+            return `${diffDays}d ago`;
         }
 
-        function formatDuration(startTime, endTime) {
-            if (!startTime || !endTime) return 'N/A';
-            const start = new Date(startTime);
-            const end = new Date(endTime);
-            const diffMs = end - start;
-            const diffSecs = Math.floor(diffMs / 1000);
-            const diffMins = Math.floor(diffSecs / 60);
-            const hours = Math.floor(diffMins / 60);
-            const mins = diffMins % 60;
-            const secs = diffSecs % 60;
-
-            if (hours > 0) return `${hours}h ${mins}m`;
-            if (mins > 0) return `${mins}m ${secs}s`;
-            return `${secs}s`;
-        }
-
-        function getStatusBadge(status) {
-            if (!status) return '<span class="status-badge badge-never">Never Run</span>';
-            const badgeClass = `badge-${status.toLowerCase()}`;
-            const icon = getStatusIcon(status);
-            return `<span class="status-badge ${badgeClass}">${icon} ${status}</span>`;
-        }
-
-        function getStatusIcon(status) {
-            const icons = {
-                'SUCCESS': '✅',
-                'FAILED': '❌',
-                'RUNNING': '🔄',
-                'SKIPPED': '⏭️',
-                'NEVER': '⚫'
-            };
-            return icons[status] || '❓';
-        }
-
-        function showRefreshIndicator() {
+        function showNotification(message, type = 'info') {
             const indicator = document.getElementById('refreshIndicator');
-            indicator.classList.add('show');
-            setTimeout(() => {
-                indicator.classList.remove('show');
-            }, 2000);
-        }
-
-        function updateConnectionStatus(isOnline) {
-            const status = document.getElementById('connectionStatus');
-            if (isOnline) {
-                status.className = 'connection-status online';
-                status.innerHTML = '🟢 Connected';
-            } else {
-                status.className = 'connection-status offline';
-                status.innerHTML = '🔴 Disconnected';
+            if (indicator) {
+                indicator.textContent = message;
+                indicator.className = `refresh-indicator show ${type}`;
+                
+                setTimeout(() => {
+                    indicator.className = 'refresh-indicator';
+                }, 3000);
             }
         }
 
-        // Main data loading
-        async function loadTasks() {
-            showRefreshIndicator();
-            
+        // Main refresh function
+        async function refreshData() {
             try {
-                const response = await fetch('/api/v2/tasks');
-                const data = await response.json();
-                
-                if (data.status === 'success') {
-                    allTasks = data.tasks;
-                    updateStats(allTasks);
-                    updateTasksTable(allTasks);
-                    updateRecentActivity(allTasks);
-                    updateSystemStatus();
-                    lastUpdateTime = new Date();
-                    updateConnectionStatus(true);
-                } else {
-                    showError('Failed to load tasks: ' + data.error);
-                    updateConnectionStatus(false);
+                console.log('🔄 Refreshing dashboard data...');
+                const [tasksData, systemData] = await Promise.all([
+                    fetchTasks(),
+                    fetchSystemStatus()
+                ]);
+
+                tasks = tasksData;
+                filteredTasks = tasksData;
+
+                updateStats(tasksData, systemData);
+                updateSystemStatus(systemData);
+                renderTasksTable(tasksData);
+                updateRecentActivity(tasksData);
+
+                // Update last updated time
+                const lastUpdatedEl = document.getElementById('last-updated');
+                if (lastUpdatedEl) {
+                    lastUpdatedEl.textContent = `Last updated: ${new Date().toLocaleTimeString()}`;
                 }
+
+                showNotification('Data refreshed', 'success');
+                console.log('✅ Dashboard refresh complete');
+
             } catch (error) {
-                showError('Connection error: ' + error.message);
-                updateConnectionStatus(false);
-                console.error('Load tasks error:', error);
+                console.error('❌ Error refreshing data:', error);
+                showNotification('Failed to refresh data', 'error');
             }
         }
 
-        // Stats updates
-        function updateStats(tasks) {
-            const stats = {
-                total: Object.keys(tasks).length,
-                success: 0,
-                failed: 0,
-                running: 0,
-                never: 0
-            };
-            
-            Object.values(tasks).forEach(task => {
-                const lastExec = task.last_execution;
-                if (!lastExec) {
-                    stats.never++;
-                } else {
-                    const status = lastExec.status?.toLowerCase();
-                    if (status === 'success') stats.success++;
-                    else if (status === 'failed') stats.failed++;
-                    else if (status === 'running') stats.running++;
-                }
-            });
-            
-            // Update numbers with animation
-            animateNumber('totalTasks', stats.total);
-            animateNumber('successCount', stats.success);
-            animateNumber('failedCount', stats.failed);
-            animateNumber('runningCount', stats.running);
-
-            // Update trends (placeholder - could calculate actual trends)
-            updateTrend('totalTrend', 'stable');
-            updateTrend('successTrend', stats.success > stats.failed ? 'up' : 'down');
-            updateTrend('failedTrend', stats.failed > 0 ? 'up' : 'down');
-            updateTrend('runningTrend', 'stable');
-        }
-
-        function animateNumber(elementId, newValue) {
-            const element = document.getElementById(elementId);
-            const currentValue = parseInt(element.textContent) || 0;
-            
-            if (currentValue === newValue) return;
-            
-            const duration = 500;
-            const startTime = performance.now();
-            
-            function animate(currentTime) {
-                const elapsed = currentTime - startTime;
-                const progress = Math.min(elapsed / duration, 1);
-                
-                const value = Math.round(currentValue + (newValue - currentValue) * progress);
-                element.textContent = value;
-                
-                if (progress < 1) {
-                    requestAnimationFrame(animate);
-                }
-            }
-            
-            requestAnimationFrame(animate);
-        }
-
-        function updateTrend(elementId, direction) {
-            const element = document.getElementById(elementId);
-            const icons = {
-                'up': '📈 Trending up',
-                'down': '📉 Trending down', 
-                'stable': '➡️ Stable'
-            };
-            element.innerHTML = `<span style="opacity: 0.7">${icons[direction] || ''}</span>`;
-        }
-
-        // Tasks table
-        function updateTasksTable(tasks) {
-            const content = document.getElementById('tasksContent');
-            
-            if (Object.keys(tasks).length === 0) {
-                content.innerHTML = `
-                    <div class="empty-state">
-                        <div class="empty-state-icon">📋</div>
-                        <h3>No tasks configured</h3>
-                        <p>Get started by adding your first task</p>
-                        <a href="/task-manager" class="btn btn-primary" style="margin-top: 16px;">Add Task</a>
-                    </div>
-                `;
-                return;
-            }
-            
-            const sortedTasks = Object.entries(tasks).sort(([,a], [,b]) => {
-                // Sort by last execution time, most recent first
-                const aTime = a.last_execution?.start_time || '0';
-                const bTime = b.last_execution?.start_time || '0';
-                return bTime.localeCompare(aTime);
-            });
-            
-            const tableHTML = `
-                <div class="table-container">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Task Name</th>
-                                <th>Type</th>
-                                <th>Schedule</th>
-                                <th>Last Status</th>
-                                <th>Last Run</th>
-                                <th>Duration</th>
-                                <th>Dependencies</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${sortedTasks.map(([name, task]) => {
-                                const lastExec = task.last_execution;
-                                const duration = lastExec ? formatDuration(lastExec.start_time, lastExec.end_time) : 'N/A';
-                                const nextRun = calculateNextRun(task.schedule);
-                                
-                                return `
-                                    <tr data-task-name="${name}" data-task-type="${task.type}" data-status="${lastExec?.status || 'NEVER'}">
-                                        <td>
-                                            <div class="task-name">${name}</div>
-                                            ${task.enabled ? '' : '<small style="color: var(--text-muted);">Disabled</small>'}
-                                        </td>
-                                        <td>
-                                            <span class="task-type">${task.type}</span>
-                                        </td>
-                                        <td>
-                                            ${task.schedule ? 
-                                                `<span class="task-schedule">${task.schedule}</span><br><small style="color: var(--text-muted);">${nextRun}</small>` : 
-                                                '<span style="color: var(--text-muted);">Manual Only</span>'
-                                            }
-                                        </td>
-                                        <td>${getStatusBadge(lastExec?.status)}</td>
-                                        <td>${formatDateTime(lastExec?.start_time)}</td>
-                                        <td>${duration}</td>
-                                        <td>
-                                            <span class="task-dependencies">
-                                                ${task.dependencies?.length > 0 ? task.dependencies.join(', ') : 'None'}
-                                            </span>
-                                        </td>
-                                        <td>
-                                            <div class="quick-actions">
-                                                <button class="quick-action" onclick="runTask('${name}')" title="Run Now">▶️</button>
-                                                <button class="quick-action" onclick="viewTaskHistory('${name}')" title="View History">📊</button>
-                                                <button class="quick-action" onclick="editTask('${name}')" title="Edit Task">✏️</button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                `;
-                            }).join('')}
-                        </tbody>
-                    </table>
-                </div>
-            `;
-            
-            content.innerHTML = tableHTML;
-        }
-
-        function calculateNextRun(schedule) {
-            if (!schedule) return 'Manual execution only';
-            
-            // This is a simplified next run calculation
-            // In a real implementation, you'd use a proper cron parser
-            const now = new Date();
-            const [minute, hour, day, month, dayOfWeek] = schedule.split(' ');
-            
-            if (schedule === '0 6 * * *') return 'Next: Tomorrow 6:00 AM';
-            if (schedule === '0 8 * * 1') return 'Next: Monday 8:00 AM';
-            if (schedule === '0 9 1 * *') return 'Next: 1st of month 9:00 AM';
-            if (schedule.startsWith('*/')) return 'Next: In a few minutes';
-            
-            return 'Next run calculated...';
-        }
-
-        // Recent activity
-        function updateRecentActivity(tasks) {
-            const activities = [];
-            
-            Object.entries(tasks).forEach(([name, task]) => {
-                if (task.last_execution) {
-                    activities.push({
-                        taskName: name,
-                        status: task.last_execution.status,
-                        startTime: task.last_execution.start_time,
-                        endTime: task.last_execution.end_time
-                    });
-                }
-            });
-            
-            // Sort by most recent first
-            activities.sort((a, b) => new Date(b.startTime) - new Date(a.startTime));
-            
-            const activityHTML = activities.slice(0, 10).map(activity => `
-                <div class="activity-item">
-                    <div class="activity-content">
-                        <div class="activity-task">${activity.taskName}</div>
-                        <div class="activity-time">${formatDateTime(activity.startTime)}</div>
-                    </div>
-                    <div class="activity-status ${activity.status.toLowerCase()}">
-                        ${getStatusIcon(activity.status)}
-                    </div>
-                </div>
-            `).join('');
-            
-            document.getElementById('recentActivity').innerHTML = 
-                activityHTML || '<div style="color: var(--text-muted); text-align: center; padding: 20px;">No recent activity</div>';
-        }
-
-        // System status
-        async function updateSystemStatus() {
-            try {
-                const response = await fetch('/api/v2/health');
-                const data = await response.json();
-                
-                const statusHTML = `
-                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
-                        <span class="status-icon ${data.status === 'healthy' ? 'success' : 'failed'}"></span>
-                        <strong>System ${data.status === 'healthy' ? 'Healthy' : 'Issues Detected'}</strong>
-                    </div>
-                    <div style="font-size: 0.9rem; color: var(--text-muted);">
-                        ${data.tasks_configured || 0} tasks configured<br>
-                        Database: ${data.database || 'Unknown'}<br>
-                        Last check: ${formatDateTime(new Date().toISOString())}
-                    </div>
-                `;
-                
-                document.getElementById('systemStatus').innerHTML = statusHTML;
-            } catch (error) {
-                document.getElementById('systemStatus').innerHTML = `
-                    <div style="color: var(--danger-color);">
-                        ❌ Unable to check system status
-                    </div>
-                `;
-            }
-        }
-
-        // Task actions
-        async function runTask(taskName) {
-            if (!confirm(`Run task "${taskName}" now?`)) return;
-            
-            try {
-                const response = await fetch(`/api/v2/tasks/${taskName}/run`, {
-                    method: 'POST'
-                });
-                const data = await response.json();
-                
-                if (data.status === 'success') {
-                    alert(`Task "${taskName}" started successfully`);
-                    // Refresh data after a short delay
-                    setTimeout(loadTasks, 2000);
-                } else {
-                    alert(`Failed to start task: ${data.error}`);
-                }
-            } catch (error) {
-                alert(`Error starting task: ${error.message}`);
-            }
-        }
-
-        function viewTaskHistory(taskName) {
-            // Open task history in new window or modal
-            window.open(`/api/v2/tasks/${taskName}/history`, '_blank');
-        }
-
-        function editTask(taskName) {
-            // Navigate to task manager with pre-selected task
-            window.location.href = `/task-manager?edit=${taskName}`;
-        }
-
-        // Filtering
-        function filterTasks() {
-            const typeFilter = document.getElementById('filterType').value;
-            const statusFilter = document.getElementById('filterStatus').value;
-            const rows = document.querySelectorAll('tbody tr[data-task-name]');
-            
-            rows.forEach(row => {
-                const taskType = row.getAttribute('data-task-type');
-                const taskStatus = row.getAttribute('data-status');
-                
-                const typeMatch = !typeFilter || taskType === typeFilter;
-                const statusMatch = !statusFilter || taskStatus === statusFilter;
-                
-                row.style.display = (typeMatch && statusMatch) ? '' : 'none';
-            });
-        }
-
-        // Auto-refresh management
-        function toggleAutoRefresh() {
-            autoRefreshEnabled = !autoRefreshEnabled;
-            const btn = document.getElementById('autoRefreshBtn');
-            const icon = document.getElementById('autoRefreshIcon');
-            
-            if (autoRefreshEnabled) {
-                icon.textContent = '⏸️';
-                startAutoRefresh();
-            } else {
-                icon.textContent = '▶️';
-                stopAutoRefresh();
-            }
-        }
-
+        // Auto-refresh setup
         function startAutoRefresh() {
-            if (refreshInterval) clearInterval(refreshInterval);
-            refreshInterval = setInterval(loadTasks, 30000); // 30 seconds
+            if (autoRefreshInterval) {
+                clearInterval(autoRefreshInterval);
+            }
+            autoRefreshInterval = setInterval(refreshData, 30000); // Refresh every 30 seconds
+            console.log('🔄 Auto-refresh started (30s interval)');
         }
 
         function stopAutoRefresh() {
-            if (refreshInterval) {
-                clearInterval(refreshInterval);
-                refreshInterval = null;
+            if (autoRefreshInterval) {
+                clearInterval(autoRefreshInterval);
+                autoRefreshInterval = null;
+                console.log('⏹️ Auto-refresh stopped');
             }
         }
-
-        function showError(message) {
-            const content = document.getElementById('tasksContent');
-            content.innerHTML = `<div class="error">${message}</div>`;
-        }
-
-        // Keyboard shortcuts
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'r' && (e.ctrlKey || e.metaKey)) {
-                e.preventDefault();
-                loadTasks();
-            }
-            if (e.key === ' ' && (e.ctrlKey || e.metaKey)) {
-                e.preventDefault();
-                toggleAutoRefresh();
-            }
-            if (e.key === 'd' && (e.ctrlKey || e.metaKey)) {
-                e.preventDefault();
-                toggleTheme();
-            }
-        });
 
         // Initialize
         document.addEventListener('DOMContentLoaded', function() {
+            console.log('🚀 Dashboard initializing...');
             initTheme();
-            loadTasks();
+            refreshData();
             startAutoRefresh();
-            
-            // Update last refresh time display
-            setInterval(() => {
-                if (lastUpdateTime) {
-                    const refreshIndicator = document.getElementById('refreshIndicator');
-                    const elapsed = Math.floor((new Date() - lastUpdateTime) / 1000);
-                    if (elapsed > 60) {
-                        refreshIndicator.textContent = `Last updated ${Math.floor(elapsed/60)}m ago`;
-                        refreshIndicator.classList.add('show');
-                    }
+
+            // Stop auto-refresh when page is not visible
+            document.addEventListener('visibilitychange', function() {
+                if (document.hidden) {
+                    stopAutoRefresh();
+                } else {
+                    startAutoRefresh();
+                    refreshData(); // Immediate refresh when page becomes visible
                 }
-            }, 10000);
+            });
+
+            console.log('✅ Dashboard initialization complete');
         });
 
         // Cleanup on page unload
